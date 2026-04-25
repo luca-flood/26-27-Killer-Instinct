@@ -28,8 +28,13 @@ public class chassis1 extends LinearOpMode {
 
 
         double leftStickY = 0;
-        double leftServoPos = 0;
-        double rightServoPos = 0;
+        double leftServoPos = 0.5;
+        double rightServoPos = 0.5;
+
+
+
+
+
         waitForStart();
 
 
@@ -60,19 +65,20 @@ public class chassis1 extends LinearOpMode {
 
 
             if (gamepad1.a){
-                leftServoPos = 1;
+                leftServoPos += 0.1 ;
             }
             if (gamepad1.b){
-                rightServoPos = 1;
+                rightServoPos += 0.1;
             }
 
 
             if (gamepad1.x){
-                leftServoPos = 0;
+                leftServoPos -= 0.1;
             }
             if (gamepad1.y){
-                rightServoPos = 0;
+                rightServoPos -= 0.1;
             }
+
             leftServo.setPosition(leftServoPos);
             rightServo.setPosition(rightServoPos);
 
