@@ -48,7 +48,6 @@ import dev.nextftc.hardware.driving.MecanumDriverControlled;
 import dev.nextftc.hardware.impl.CRServoEx;
 import dev.nextftc.hardware.impl.MotorEx;
 @Disabled
-
 @TeleOp(name="Red Far Ideal", group="Red ILT")
 public class ILTRedFar extends NextFTCOpMode {
 
@@ -273,7 +272,7 @@ public class ILTRedFar extends NextFTCOpMode {
         backLeftMotor.setDirection(-1);
 
         clanka = PedroComponent.follower();
-        clanka.setStartingPose(new Pose(89.0925, 42.3661, 1.5767));
+        clanka.setStartingPose(new Pose(72, 72, 0));
 
         transferSubsystem.INSTANCE.toNeutral.schedule();
 

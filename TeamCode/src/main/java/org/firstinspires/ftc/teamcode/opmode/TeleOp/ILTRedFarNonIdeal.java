@@ -47,7 +47,6 @@ import dev.nextftc.ftc.components.BulkReadComponent;
 import dev.nextftc.hardware.driving.MecanumDriverControlled;
 import dev.nextftc.hardware.impl.CRServoEx;
 import dev.nextftc.hardware.impl.MotorEx;
-@Disabled
 
 @TeleOp(name="Red Far Non Ideal", group="Red ILT")
 public class ILTRedFarNonIdeal extends NextFTCOpMode {
@@ -116,7 +115,7 @@ public class ILTRedFarNonIdeal extends NextFTCOpMode {
     double blueX = 0;
     double blueY = 144;
     double offset = 8.8;
-    double goalX = 144-7.1;
+    double goalX = 144-3.1;
     double goalY = 144;
     double visionX = 0;
     double visionY = 0;
@@ -273,7 +272,7 @@ public class ILTRedFarNonIdeal extends NextFTCOpMode {
         backLeftMotor.setDirection(-1);
 
         clanka = PedroComponent.follower();
-        clanka.setStartingPose(new Pose(84.1749, 12.6325, 1.2764).mirror());
+        clanka.setStartingPose(new Pose(72, 72+18, 90).mirror());
 
         transferSubsystem.INSTANCE.toNeutral.schedule();
 
