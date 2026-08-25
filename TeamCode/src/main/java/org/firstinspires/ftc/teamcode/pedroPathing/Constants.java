@@ -5,11 +5,12 @@ import com.pedropathing.control.PIDFCoefficients;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.follower.FollowerConstants;
 import com.pedropathing.ftc.FollowerBuilder;
-import com.pedropathing.ftc.drivetrains.MecanumConstants;
-import com.pedropathing.ftc.localization.Encoder;
+import com.pedropathing.ftc.drivetrains.SwerveConstants;
 import com.pedropathing.ftc.localization.constants.PinpointConstants;
+import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathConstraints;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
@@ -55,25 +56,91 @@ public class Constants {
             .forwardEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED)
             .strafeEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED);
 
-    public static MecanumConstants driveConstants = new MecanumConstants()
+    public static SwerveConstants driveConstants = new SwerveConstants()
             .maxPower(1)
-            .rightFrontMotorName("rightFront")
-            .rightRearMotorName("rightRear")
-            .leftRearMotorName("leftRear")
-            .leftFrontMotorName("leftFront")
-            .leftFrontMotorDirection(DcMotorSimple.Direction.REVERSE)
-            .leftRearMotorDirection(DcMotorSimple.Direction.REVERSE)
-            .rightFrontMotorDirection(DcMotorSimple.Direction.FORWARD)
-            .rightRearMotorDirection(DcMotorSimple.Direction.FORWARD)
-            .xVelocity(81.6375733333)
-            .yVelocity(53.2500663333)
+            .useBrakeModeInTeleOp(true)
+            .zeroPowerBehavior(SwerveConstants.ZeroPowerBehavior.IGNORE_ANGLE_CHANGES)
+            .velocity(67.0)
             ;
 
     public static Follower createFollower(HardwareMap hardwareMap) {
         return new FollowerBuilder(followerConstants, hardwareMap)
                 .pathConstraints(pathConstraints)
                 .pinpointLocalizer(localizerConstants)
-                .mecanumDrivetrain(driveConstants)
+                .swerveDrivetrain(
+                        driveConstants,
+                        frontLeftPod(hardwareMap),
+                        frontRightPod(hardwareMap),
+                        backLeftPod(hardwareMap),
+                        backRightPod(hardwareMap))
                 .build();
+    }
+
+    private static PatchedCoaxialPod frontLeftPod(HardwareMap hardwareMap) {
+        return new PatchedCoaxialPod(
+                hardwareMap,
+                "frontLeft",
+                "frontLeft1",
+                "frontLeft2",
+                new PIDFCoefficients(0.35, 0.0, 0.0, 0.12),
+                DcMotorSimple.Direction.FORWARD,
+                CRServo.Direction.FORWARD,
+                Math.toRadians(78.1),
+                new Pose(7.0, 7.0, 0.0),
+                0.0,
+                3.3,
+                true,
+                240.0);
+    }
+
+    private static PatchedCoaxialPod frontRightPod(HardwareMap hardwareMap) {
+        return new PatchedCoaxialPod(
+                hardwareMap,
+                "frontRight",
+                "frontRight1",
+                "frontRight2",
+                new PIDFCoefficients(0.35, 0.0, 0.0, 0.12),
+                DcMotorSimple.Direction.FORWARD,
+                CRServo.Direction.FORWARD,
+                Math.toRadians(240.2),
+                new Pose(7.0, -7.0, 0.0),
+                0.0,
+                3.3,
+                true,
+                240.0);
+    }
+
+    private static PatchedCoaxialPod backLeftPod(HardwareMap hardwareMap) {
+        return new PatchedCoaxialPod(
+                hardwareMap,
+                "backLeft",
+                "backLeft1",
+                "backLeft2",
+                new PIDFCoefficients(0.35, 0.0, 0.0, 0.12),
+                DcMotorSimple.Direction.FORWARD,
+                CRServo.Direction.FORWARD,
+                Math.toRadians(10.4),
+                new Pose(-7.0, 7.0, 0.0),
+                0.0,
+                3.3,
+                true,
+                240.0);
+    }
+
+    private static PatchedCoaxialPod backRightPod(HardwareMap hardwareMap) {
+        return new PatchedCoaxialPod(
+                hardwareMap,
+                "backRight",
+                "backRight1",
+                "backRight2",
+                new PIDFCoefficients(0.35, 0.0, 0.0, 0.12),
+                DcMotorSimple.Direction.FORWARD,
+                CRServo.Direction.FORWARD,
+                Math.toRadians(77.9),
+                new Pose(-7.0, -7.0, 0.0),
+                0.0,
+                3.3,
+                true,
+                240.0);
     }
 }
