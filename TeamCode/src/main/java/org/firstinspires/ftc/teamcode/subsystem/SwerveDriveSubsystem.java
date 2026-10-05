@@ -1,8 +1,8 @@
 package org.firstinspires.ftc.teamcode.subsystem;
 
 import com.pedropathing.follower.Follower;
-import com.pedropathing.geometry.Pose;
-import com.pedropathing.paths.PathChain;
+import com.pedropathing.math.Pose;
+import com.pedropathing.paths.Path;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.teamcode.control.RobotSubsystem;
@@ -13,17 +13,23 @@ public class SwerveDriveSubsystem implements RobotSubsystem {
 
     public SwerveDriveSubsystem(HardwareMap hardwareMap, Pose startingPose) {
         follower = Constants.createFollower(hardwareMap);
-        follower.setStartingPose(startingPose);
+        if (follower != null) {
+            follower.setPose(startingPose);
+        }
     }
 
     @Override
     public void update() {
-        follower.update();
+        if (follower != null) {
+            follower.update();
+        }
     }
 
     @Override
     public void stop() {
-        follower.breakFollowing();
+        if (follower != null) {
+            follower.stop();
+        }
     }
 
     public Follower getFollower() {
@@ -31,14 +37,17 @@ public class SwerveDriveSubsystem implements RobotSubsystem {
     }
 
     public Pose getPose() {
-        return follower.getPose();
+        return follower == null ? Pose.zero() : follower.pose();
     }
 
-    public void follow(PathChain path, boolean holdEnd, double maxPower) {
-        follower.followPath(path, maxPower, holdEnd);
+    public void follow(Path path, boolean holdEnd, double maxPower) {
+        if (follower != null) {
+            follower.holdEnd.set(holdEnd);
+            follower.follow(path);
+        }
     }
 
     public boolean isBusy() {
-        return follower.isBusy();
+        return follower != null && follower.isBusy();
     }
 }

@@ -1,115 +1,220 @@
 package org.firstinspires.ftc.teamcode.pedroPathing;
 
-import com.pedropathing.control.PIDFCoefficients;
-import com.pedropathing.control.PIDFController;
-import com.pedropathing.ftc.drivetrains.SwervePod;
-import com.pedropathing.geometry.Pose;
-import com.pedropathing.math.MathFunctions;
+import com.pedropathing.controllers.Controller;
+import com.pedropathing.math.Vector2D;
+import com.pedropathing.revhub.drivetrains.CoaxialPodConfig;
+import com.pedropathing.revhub.drivetrains.SwervePod;
+import com.pedropathing.utils.Angle;
+import com.pedropathing.utils.Utils;
 import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.qualcomm.robotcore.util.ElapsedTime;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.DoubleSupplier;
+import java.util.function.Supplier;
 
 public class PatchedCoaxialPod implements SwervePod {
+    public static final double DEFAULT_WHEEL_DEGREES_PER_ENCODER_REVOLUTION = 240.0;
+
+    private final String name;
     private final AnalogInput turnEncoder;
     private final CRServo turnServo;
     private final DcMotorEx driveMotor;
-    private final PIDFController turnPID;
-    private final Pose offset;
-    private final double angleOffsetRad;
-    private final String servoLabel;
-    private final double analogMinVoltage;
-    private final double analogMaxVoltage;
-    private final boolean encoderReversed;
+    private final Supplier<Controller> turnController;
+    private final Supplier<DcMotorSimple.Direction> driveDirection;
+    private final Supplier<CRServo.Direction> servoDirection;
+    private final Supplier<Vector2D> podOffset;
+    private final Supplier<Boolean> encoderReversed;
+    private final Supplier<Double> motorCachingThreshold;
+    private final Supplier<Double> servoCachingThreshold;
+    private final Supplier<Double> analogMinVoltage;
+    private final Supplier<Double> analogMaxVoltage;
+    private final DoubleSupplier wheelAngleRadSupplier;
+    private final ScaledAnalogAngleSupplier scaledAngleSupplier;
     private final double wheelToEncoderRatio;
-    private final double encoderToWheelRatio;
-    private final ElapsedTime sampleTimer = new ElapsedTime();
 
-    private double motorCachingThreshold = 0.01;
-    private double servoCachingThreshold = 0.01;
     private double backlashDeadbandRad = Math.toRadians(2.0);
-    private double maxEncoderVelocityRadPerSecond = Math.toRadians(1440.0);
-    private double lastWrappedEncoderAngleRad = 0.0;
-    private double continuousEncoderAngleRad = 0.0;
-    private boolean hasEncoderSample = false;
     private double lastDrivePower = 0.0;
     private double lastTurnPower = 0.0;
+
+    public PatchedCoaxialPod(HardwareMap hardwareMap, CoaxialPodConfig config) {
+        this(
+                hardwareMap,
+                config,
+                DEFAULT_WHEEL_DEGREES_PER_ENCODER_REVOLUTION);
+    }
+
+    public PatchedCoaxialPod(
+            HardwareMap hardwareMap,
+            CoaxialPodConfig config,
+            double wheelDegreesPerEncoderRevolution) {
+        this(
+                hardwareMap,
+                config,
+                hardwareMap.get(AnalogInput.class, config.servoEncoderName.get()),
+                wheelDegreesPerEncoderRevolution);
+    }
+
+    public PatchedCoaxialPod(
+            HardwareMap hardwareMap,
+            CoaxialPodConfig config,
+            AnalogInput turnEncoder,
+            double wheelDegreesPerEncoderRevolution) {
+        this(
+                hardwareMap,
+                config.name.get(),
+                config.motorName.get(),
+                config.servoName.get(),
+                turnEncoder,
+                config.turnController,
+                config.driveDirection,
+                config.servoDirection,
+                config.podOffset,
+                config.encoderReversed,
+                config.motorCachingThreshold,
+                config.servoCachingThreshold,
+                config.analogMinVoltage,
+                config.analogMaxVoltage,
+                new ScaledAnalogAngleSupplier(
+                        turnEncoder,
+                        config.analogMinVoltage.get(),
+                        config.analogMaxVoltage.get(),
+                        config.angleOffsetRad.get(),
+                        config.encoderReversed.get(),
+                        wheelDegreesPerEncoderRevolution),
+                wheelDegreesPerEncoderRevolution);
+    }
+
+    public PatchedCoaxialPod(
+            HardwareMap hardwareMap,
+            CoaxialPodConfig config,
+            AnalogInput turnEncoder,
+            DoubleSupplier wheelAngleRadSupplier,
+            double wheelDegreesPerEncoderRevolution) {
+        this(
+                hardwareMap,
+                config.name.get(),
+                config.motorName.get(),
+                config.servoName.get(),
+                turnEncoder,
+                config.turnController,
+                config.driveDirection,
+                config.servoDirection,
+                config.podOffset,
+                config.encoderReversed,
+                config.motorCachingThreshold,
+                config.servoCachingThreshold,
+                config.analogMinVoltage,
+                config.analogMaxVoltage,
+                wheelAngleRadSupplier,
+                wheelDegreesPerEncoderRevolution);
+    }
 
     public PatchedCoaxialPod(
             HardwareMap hardwareMap,
             String motorName,
             String servoName,
             String turnEncoderName,
-            PIDFCoefficients turnPIDFCoefficients,
+            Controller turnController,
             DcMotorSimple.Direction driveDirection,
             CRServo.Direction servoDirection,
             double angleOffsetRad,
-            Pose podOffset,
+            Vector2D podOffset,
             double analogMinVoltage,
             double analogMaxVoltage,
             boolean encoderReversed,
             double wheelDegreesPerEncoderRevolution) {
-        driveMotor = hardwareMap.get(DcMotorEx.class, motorName);
-        turnServo = hardwareMap.get(CRServo.class, servoName);
-        turnEncoder = hardwareMap.get(AnalogInput.class, turnEncoderName);
-        turnPID = new PIDFController(turnPIDFCoefficients);
-        this.angleOffsetRad = angleOffsetRad;
-        this.offset = podOffset;
+        this(
+                hardwareMap,
+                servoName,
+                motorName,
+                servoName,
+                hardwareMap.get(AnalogInput.class, turnEncoderName),
+                () -> turnController,
+                () -> driveDirection,
+                () -> servoDirection,
+                () -> podOffset,
+                () -> encoderReversed,
+                () -> 0.01,
+                () -> 0.01,
+                () -> analogMinVoltage,
+                () -> analogMaxVoltage,
+                new ScaledAnalogAngleSupplier(
+                        hardwareMap.get(AnalogInput.class, turnEncoderName),
+                        analogMinVoltage,
+                        analogMaxVoltage,
+                        angleOffsetRad,
+                        encoderReversed,
+                        wheelDegreesPerEncoderRevolution),
+                wheelDegreesPerEncoderRevolution);
+    }
+
+    private PatchedCoaxialPod(
+            HardwareMap hardwareMap,
+            String name,
+            String motorName,
+            String servoName,
+            AnalogInput turnEncoder,
+            Supplier<Controller> turnController,
+            Supplier<DcMotorSimple.Direction> driveDirection,
+            Supplier<CRServo.Direction> servoDirection,
+            Supplier<Vector2D> podOffset,
+            Supplier<Boolean> encoderReversed,
+            Supplier<Double> motorCachingThreshold,
+            Supplier<Double> servoCachingThreshold,
+            Supplier<Double> analogMinVoltage,
+            Supplier<Double> analogMaxVoltage,
+            DoubleSupplier wheelAngleRadSupplier,
+            double wheelDegreesPerEncoderRevolution) {
+        this.name = name;
+        this.turnEncoder = turnEncoder;
+        this.turnServo = hardwareMap.get(CRServo.class, servoName);
+        this.driveMotor = hardwareMap.get(DcMotorEx.class, motorName);
+        this.turnController = turnController;
+        this.driveDirection = driveDirection;
+        this.servoDirection = servoDirection;
+        this.podOffset = podOffset;
+        this.encoderReversed = encoderReversed;
+        this.motorCachingThreshold = motorCachingThreshold;
+        this.servoCachingThreshold = servoCachingThreshold;
         this.analogMinVoltage = analogMinVoltage;
         this.analogMaxVoltage = analogMaxVoltage;
-        this.encoderReversed = encoderReversed;
-        this.encoderToWheelRatio = wheelDegreesPerEncoderRevolution / 360.0;
+        this.wheelAngleRadSupplier = wheelAngleRadSupplier;
+        this.scaledAngleSupplier = wheelAngleRadSupplier instanceof ScaledAnalogAngleSupplier
+                ? (ScaledAnalogAngleSupplier) wheelAngleRadSupplier
+                : null;
         this.wheelToEncoderRatio = 360.0 / wheelDegreesPerEncoderRevolution;
-        this.servoLabel = servoName;
 
-        driveMotor.setDirection(driveDirection);
-        turnServo.setDirection(servoDirection);
         setMotorToFloat();
+        driveMotor.setDirection(this.driveDirection.get());
+        driveMotor.setPower(0.0);
+        turnServo.setDirection(this.servoDirection.get());
         turnServo.setPower(0.0);
     }
 
     @Override
-    public Pose getOffset() {
-        return offset;
+    public Vector2D getOffset() {
+        return podOffset.get();
     }
 
     @Override
     public double getAngle() {
-        return getWheelAngleAfterOffsetRad();
+        return getAngleAfterOffsetRad();
     }
 
-    @Override
-    public double adjustThetaForEncoder(double wheelTheta) {
-        return MathFunctions.normalizeAngle(wheelTheta);
+    public void setServoPower(double power) {
+        lastTurnPower = power;
+        turnServo.setPower(power);
     }
 
-    @Override
-    public void move(double targetAngleRad, double drivePower, boolean ignoreAngleChanges) {
-        double actualWheelRad = getAngle();
-        double desiredWheelRad = adjustThetaForEncoder(targetAngleRad);
-
-        double wheelErrorRad = shortestSignedError(actualWheelRad, desiredWheelRad);
-
-        if (Math.abs(wheelErrorRad) > (Math.PI / 2.0)) {
-            desiredWheelRad = MathFunctions.normalizeAngle(desiredWheelRad + Math.PI);
-            drivePower = -drivePower;
-            wheelErrorRad = shortestSignedError(actualWheelRad, desiredWheelRad);
-        }
-
-        if (Math.abs(wheelErrorRad) < backlashDeadbandRad) {
-            turnPID.updateFeedForwardInput(0.0);
-            setTurnPower(0.0, ignoreAngleChanges);
-        } else {
-            double encoderErrorRad = wheelErrorToEncoderError(wheelErrorRad);
-            turnPID.updateFeedForwardInput(Math.signum(encoderErrorRad));
-            turnPID.updateError(encoderErrorRad);
-            setTurnPower(MathFunctions.clamp(turnPID.run(), -1.0, 1.0), ignoreAngleChanges);
-        }
-
-        setDrivePower(drivePower);
+    public void setMotorPower(double power) {
+        lastDrivePower = power;
+        driveMotor.setPower(power);
     }
 
     @Override
@@ -119,129 +224,134 @@ public class PatchedCoaxialPod implements SwervePod {
 
     @Override
     public void setToBreak() {
-        setMotorToBrake();
+        setMotorToBreak();
     }
 
     public void setMotorToFloat() {
         driveMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
     }
 
-    public void setMotorToBrake() {
+    public void setMotorToBreak() {
         driveMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
     }
 
+    public boolean isEncoderReversed() {
+        return encoderReversed.get();
+    }
+
+    @Override
+    public double adjustThetaForEncoder(double wheelTheta) {
+        // Preserve Pedro's servo-frame quarter turn; this supplier already applies encoder reversal.
+        return Angle.normalize(wheelTheta + (encoderReversed.get() ? Math.PI / 2 : -Math.PI / 2));
+    }
+
+    @Override
+    public void move(double targetAngleRad, double drivePower, boolean ignoreAngleChanges) {
+        double actualRad = Angle.normalize(getAngleAfterOffsetRad());
+        double desiredRad = adjustThetaForEncoder(targetAngleRad);
+
+        double errorRad = Angle.normalizeSigned(desiredRad - actualRad);
+
+        if (Math.abs(errorRad) > (Math.PI / 2.0)) {
+            desiredRad = Angle.normalize(desiredRad + Math.PI);
+            drivePower = -drivePower;
+            errorRad = Angle.normalizeSigned(desiredRad - actualRad);
+        }
+
+        double encoderErrorRad = wheelErrorToEncoderError(errorRad);
+        double turnPower;
+        if (Math.abs(errorRad) < backlashDeadbandRad) {
+            turnPower = Utils.clamp(turnController.get().calculate(0.0, encoderErrorRad), -1.0, 1.0);
+        } else {
+            turnPower = Utils.clamp(
+                    turnController.get().calculate(Math.signum(encoderErrorRad), encoderErrorRad),
+                    -1.0,
+                    1.0);
+        }
+
+        double currentServoCachingThreshold = servoCachingThreshold.get();
+        double currentMotorCachingThreshold = motorCachingThreshold.get();
+
+        if (ignoreAngleChanges) {
+            lastTurnPower = 0.0;
+            turnServo.setPower(0.0);
+        } else if (Math.abs(turnPower - lastTurnPower) > currentServoCachingThreshold || (turnPower == 0.0 && lastTurnPower != 0.0)) {
+            lastTurnPower = turnPower;
+            turnServo.setPower(turnPower);
+        }
+
+        if (Math.abs(drivePower - lastDrivePower) > currentMotorCachingThreshold || (drivePower == 0.0 && lastDrivePower != 0.0)) {
+            lastDrivePower = drivePower;
+            driveMotor.setPower(drivePower);
+        }
+    }
+
+    public double getAngleAfterOffsetRad() {
+        return Angle.normalize(wheelAngleRadSupplier.getAsDouble());
+    }
+
     public double getRawAngleRad() {
-        double range = analogMaxVoltage - analogMinVoltage;
+        double range = getAnalogMaxVoltage() - getAnalogMinVoltage();
         if (range == 0.0) {
             return 0.0;
         }
 
-        double normalized = (turnEncoder.getVoltage() - analogMinVoltage) / range;
-        return MathFunctions.clamp(normalized, 0.0, 1.0) * (2.0 * Math.PI);
+        double normalized = (turnEncoder.getVoltage() - getAnalogMinVoltage()) / range;
+        return Utils.clamp(normalized, 0.0, 1.0) * (2.0 * Math.PI);
     }
 
-    public double getWheelAngleAfterOffsetRad() {
-        double encoderDelta = getContinuousEncoderAngleRad() - angleOffsetRad;
-        if (!encoderReversed) {
-            encoderDelta *= -1.0;
-        }
-        return MathFunctions.normalizeAngle(encoderDelta * encoderToWheelRatio);
+    public double getOffsetAngleRad() {
+        return Angle.normalize(getAngleAfterOffsetRad());
     }
 
-    public double getContinuousEncoderAngleRad() {
-        updateContinuousEncoderAngle();
-        return continuousEncoderAngleRad;
-    }
-
-    public void setMotorCachingThreshold(double motorCachingThreshold) {
-        this.motorCachingThreshold = motorCachingThreshold;
-    }
-
-    public void setServoCachingThreshold(double servoCachingThreshold) {
-        this.servoCachingThreshold = servoCachingThreshold;
-    }
-
-    public void setBacklashDeadbandDegrees(double backlashDeadbandDegrees) {
-        this.backlashDeadbandRad = Math.toRadians(backlashDeadbandDegrees);
-    }
-
-    public void setMaxEncoderVelocityDegreesPerSecond(double maxEncoderVelocityDegreesPerSecond) {
-        this.maxEncoderVelocityRadPerSecond = Math.toRadians(maxEncoderVelocityDegreesPerSecond);
+    public String name() {
+        return name;
     }
 
     @Override
-    public String debugString() {
+    public Map<String, Object> debug() {
         double rawAngleRad = getRawAngleRad();
-        double continuousAngleRad = getContinuousEncoderAngleRad();
-        double wheelAngleRad = getWheelAngleAfterOffsetRad();
-        return servoLabel + " {"
-                + "\nraw encoder angle (rad/deg) = " + rawAngleRad + " / " + Math.toDegrees(rawAngleRad)
-                + "\ncontinuous encoder angle (rad/deg) = " + continuousAngleRad + " / " + Math.toDegrees(continuousAngleRad)
-                + "\nwheel angle after offset (rad/deg) = " + wheelAngleRad + " / " + Math.toDegrees(wheelAngleRad)
-                + "\nservo Power = " + turnServo.getPower()
-                + "\ndrive Power = " + driveMotor.getPower()
-                + "\n}";
+        double angleAfterOffsetRad = getAngleAfterOffsetRad();
+
+        Map<String, Object> map = new HashMap<>();
+        map.put("servoName", name);
+        map.put("rawVoltage", turnEncoder.getVoltage());
+        map.put("rawAngleRad", rawAngleRad);
+        map.put("rawAngleDeg", Math.toDegrees(rawAngleRad));
+        map.put("angleAfterOffsetRad", angleAfterOffsetRad);
+        map.put("angleAfterOffsetDeg", Math.toDegrees(angleAfterOffsetRad));
+        map.put("continuousEncoderAngleRad", getContinuousEncoderAngleRad());
+        map.put("continuousEncoderAngleDeg", Math.toDegrees(getContinuousEncoderAngleRad()));
+        map.put("rejectedAngleSpikes", scaledAngleSupplier == null ? 0 : scaledAngleSupplier.getRejectedSpikeCount());
+        map.put("servoPower", turnServo.getPower());
+        map.put("drivePower", driveMotor.getPower());
+        return map;
     }
 
-    private void updateContinuousEncoderAngle() {
-        double wrappedAngleRad = getRawAngleRad();
+    public double getContinuousEncoderAngleRad() {
+        return scaledAngleSupplier == null ? Double.NaN : scaledAngleSupplier.getContinuousEncoderAngleRad();
+    }
 
-        if (!hasEncoderSample) {
-            lastWrappedEncoderAngleRad = wrappedAngleRad;
-            continuousEncoderAngleRad = wrappedAngleRad;
-            hasEncoderSample = true;
-            sampleTimer.reset();
-            return;
+    public void setBacklashDeadbandDegrees(double backlashDeadbandDegrees) {
+        backlashDeadbandRad = Math.toRadians(backlashDeadbandDegrees);
+    }
+
+    public void setMaxEncoderVelocityDegreesPerSecond(double maxEncoderVelocityDegreesPerSecond) {
+        if (scaledAngleSupplier != null) {
+            scaledAngleSupplier.setMaxEncoderVelocityDegreesPerSecond(maxEncoderVelocityDegreesPerSecond);
         }
-
-        double deltaRad = normalizeSignedAngle(wrappedAngleRad - lastWrappedEncoderAngleRad);
-        double elapsedSeconds = Math.max(sampleTimer.seconds(), 0.001);
-        double maxDeltaRad = maxEncoderVelocityRadPerSecond * elapsedSeconds;
-
-        if (Math.abs(deltaRad) <= maxDeltaRad) {
-            continuousEncoderAngleRad += deltaRad;
-            lastWrappedEncoderAngleRad = wrappedAngleRad;
-        }
-
-        sampleTimer.reset();
     }
 
     private double wheelErrorToEncoderError(double wheelErrorRad) {
         double encoderErrorRad = wheelErrorRad * wheelToEncoderRatio;
-        return encoderReversed ? encoderErrorRad : -encoderErrorRad;
+        return encoderReversed.get() ? encoderErrorRad : -encoderErrorRad;
     }
 
-    private double normalizeSignedAngle(double angleRad) {
-        while (angleRad > Math.PI) {
-            angleRad -= 2.0 * Math.PI;
-        }
-        while (angleRad <= -Math.PI) {
-            angleRad += 2.0 * Math.PI;
-        }
-        return angleRad;
+    private double getAnalogMinVoltage() {
+        return analogMinVoltage.get();
     }
 
-    private double shortestSignedError(double actualRad, double desiredRad) {
-        double magnitude = MathFunctions.getSmallestAngleDifference(actualRad, desiredRad);
-        double direction = MathFunctions.getTurnDirection(actualRad, desiredRad);
-        return (magnitude == Math.PI) ? -Math.PI : magnitude * direction;
-    }
-
-    private void setTurnPower(double turnPower, boolean ignoreAngleChanges) {
-        if (ignoreAngleChanges) {
-            turnPower = 0.0;
-        }
-
-        if (Math.abs(turnPower - lastTurnPower) > servoCachingThreshold || (turnPower == 0.0 && lastTurnPower != 0.0)) {
-            lastTurnPower = turnPower;
-            turnServo.setPower(turnPower);
-        }
-    }
-
-    private void setDrivePower(double drivePower) {
-        if (Math.abs(drivePower - lastDrivePower) > motorCachingThreshold || (drivePower == 0.0 && lastDrivePower != 0.0)) {
-            lastDrivePower = drivePower;
-            driveMotor.setPower(drivePower);
-        }
+    private double getAnalogMaxVoltage() {
+        return analogMaxVoltage.get();
     }
 }
