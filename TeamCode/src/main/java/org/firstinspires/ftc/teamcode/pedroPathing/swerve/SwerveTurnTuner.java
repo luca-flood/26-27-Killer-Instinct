@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.pedroPathing.swerve;
 
-import com.pedropathing.follower.Follower;
+import com.pedropathing.drivetrain.DrivePowers;
+import com.pedropathing.revhub.drivetrains.Swerve;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
@@ -17,14 +18,14 @@ import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 // Adapted from official Quickstart commit 0470fdd; hold RB to permit motion.
 public class SwerveTurnTuner extends OpMode {
     boolean debugStringEnabled = false;
-    Follower follower;
+    Swerve drivetrain;
 
     @Override
     public void init() {
-        follower = Constants.createFollower(hardwareMap);
+        drivetrain = Constants.createDrivetrain(hardwareMap);
     }
 
-    /** This initializes the PoseUpdater, the drive motors, and the Panels telemetry. */
+    /** Drivetrain-only test: no Pinpoint or other localizer is constructed. */
     @Override
     public void init_loop() {
         if (gamepad1.aWasPressed() || gamepad2.aWasPressed()) {
@@ -38,18 +39,15 @@ public class SwerveTurnTuner extends OpMode {
         telemetry.addLine("Drivetrain debug string " + (((debugStringEnabled) ? "enabled" : "disabled")) +
                 " (press gamepad a to toggle)");
         telemetry.update();
-        follower.update();
+        drivetrain.drive(DrivePowers.zero(), true);
     }
 
     @Override
     public void start() {
-        follower.update();
+        drivetrain.drive(DrivePowers.zero(), true);
     }
 
-    /**
-     * This updates the robot's pose estimate, the simple drive, and updates the
-     * Panels telemetry with the robot's position as well as draws the robot's position.
-     */
+    /** Apply manual drive powers directly, without pose estimation. */
     @Override
     public void loop() {
         if (gamepad1.aWasPressed() || gamepad2.aWasPressed()) {
@@ -57,23 +55,21 @@ public class SwerveTurnTuner extends OpMode {
         }
 
         if (gamepad1.right_bumper) {
-            follower.manual(0, 0, 0.25);
+            drivetrain.drive(new DrivePowers(0, 0, 0.25), true);
         } else {
-            follower.manual(0, 0, 0);
+            drivetrain.drive(DrivePowers.zero(), true);
         }
-        follower.update();
 
         if (debugStringEnabled) {
             telemetry.addLine("Drivetrain Debug String:\n" +
-                    follower.drivetrain.debug());
+                    drivetrain.debug());
         }
         telemetry.update();
     }
     @Override
     public void stop() {
-        if (follower != null) {
-            follower.manual(0, 0, 0);
-            follower.update();
+        if (drivetrain != null) {
+            drivetrain.stop();
         }
         for (com.pedropathing.revhub.drivetrains.CoaxialPodConfig config : Constants.podConfigs()) {
             hardwareMap.get(com.qualcomm.robotcore.hardware.CRServo.class, config.servoName.get()).setPower(0);

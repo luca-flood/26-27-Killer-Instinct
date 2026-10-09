@@ -247,12 +247,23 @@ public class PatchedCoaxialPod implements SwervePod {
 
     @Override
     public void move(double targetAngleRad, double drivePower, boolean ignoreAngleChanges) {
+        moveInternal(targetAngleRad, drivePower, ignoreAngleChanges, true);
+    }
+
+    /** Direct wheel-angle tuning without the drive motor's 180-degree optimization. */
+    public void tuneSteering(double wheelAngleRad) {
+        double frameOffset = encoderReversed.get() ? Math.PI / 2 : -Math.PI / 2;
+        moveInternal(wheelAngleRad - frameOffset, 0.0, false, false);
+    }
+
+    private void moveInternal(double targetAngleRad, double drivePower,
+                              boolean ignoreAngleChanges, boolean optimizeDrive) {
         double actualRad = Angle.normalize(getAngleAfterOffsetRad());
         double desiredRad = adjustThetaForEncoder(targetAngleRad);
 
         double errorRad = Angle.normalizeSigned(desiredRad - actualRad);
 
-        if (Math.abs(errorRad) > (Math.PI / 2.0)) {
+        if (optimizeDrive && Math.abs(errorRad) > (Math.PI / 2.0)) {
             desiredRad = Angle.normalize(desiredRad + Math.PI);
             drivePower = -drivePower;
             errorRad = Angle.normalizeSigned(desiredRad - actualRad);

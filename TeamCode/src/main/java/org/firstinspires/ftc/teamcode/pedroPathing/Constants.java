@@ -22,37 +22,62 @@ import java.util.OptionalDouble;
 public class Constants {
     public static final double WHEEL_DEGREES_PER_ENCODER_REVOLUTION = 240.0;
 
-    public static final double FRONT_LEFT_STRAIGHT_ENCODER_DEG = 78.1;
-    public static final double BACK_LEFT_STRAIGHT_ENCODER_DEG = 10.4;
-    public static final double FRONT_RIGHT_STRAIGHT_ENCODER_DEG = 240.2;
-    public static final double BACK_RIGHT_STRAIGHT_ENCODER_DEG = 77.9;
+    // Latest calibrated raw encoder angles with all wheels physically facing forward.
+    public static final double FRONT_LEFT_STRAIGHT_ENCODER_DEG = 150.244;
+    public static final double BACK_LEFT_STRAIGHT_ENCODER_DEG = 99.187;
+    public static final double FRONT_RIGHT_STRAIGHT_ENCODER_DEG = 57.146;
+    public static final double BACK_RIGHT_STRAIGHT_ENCODER_DEG = 99.919;
 
-    // TODO: Measure from robot center to each module center in inches.
-    public static final double FRONT_LEFT_X_IN = 7.0;
-    public static final double FRONT_LEFT_Y_IN = 7.0;
-    public static final double FRONT_RIGHT_X_IN = 7.0;
-    public static final double FRONT_RIGHT_Y_IN = -7.0;
-    public static final double BACK_LEFT_X_IN = -7.0;
-    public static final double BACK_LEFT_Y_IN = 7.0;
-    public static final double BACK_RIGHT_X_IN = -7.0;
-    public static final double BACK_RIGHT_Y_IN = -7.0;
+    // Assumes steering axes lie on wheel centerlines and the robot origin is their rectangle's center.
+    public static final double POD_TRACK_WIDTH_IN = 15.0 - 20.0 / 25.4;
+    // Assumes the reported 13.2 inches is front-to-back steering-axis spacing.
+    public static final double POD_WHEELBASE_IN = 13.2;
+    public static final double FRONT_LEFT_X_IN = POD_WHEELBASE_IN / 2.0;
+    public static final double FRONT_LEFT_Y_IN = POD_TRACK_WIDTH_IN / 2.0;
+    public static final double FRONT_RIGHT_X_IN = POD_WHEELBASE_IN / 2.0;
+    public static final double FRONT_RIGHT_Y_IN = -POD_TRACK_WIDTH_IN / 2.0;
+    public static final double BACK_LEFT_X_IN = -POD_WHEELBASE_IN / 2.0;
+    public static final double BACK_LEFT_Y_IN = POD_TRACK_WIDTH_IN / 2.0;
+    public static final double BACK_RIGHT_X_IN = -POD_WHEELBASE_IN / 2.0;
+    public static final double BACK_RIGHT_Y_IN = -POD_TRACK_WIDTH_IN / 2.0;
 
     // TODO: Tune these with Pedro/Panels tuning once pod angle tracking is verified.
-    public static double TURN_P = 0.35;
+    public static double TURN_P = 0.3;
     public static double TURN_I = 0.0;
-    public static double TURN_D = 0.0;
-    public static double TURN_F = 0.12;
+    public static double TURN_D = 0.03;
+    public static double TURN_F = 0.05;
 
     // TODO: Confirm motor, servo, and encoder directions on the real robot.
     public static final DcMotorSimple.Direction DEFAULT_DRIVE_DIRECTION = DcMotorSimple.Direction.FORWARD;
     public static final DcMotorSimple.Direction DEFAULT_SERVO_DIRECTION = DcMotorSimple.Direction.FORWARD;
     public static final boolean DEFAULT_ENCODER_REVERSED = true;
 
-    // Measured bidirectional voltage bounds; remeasure straight offsets with these calibrated ranges.
+    // Measured bidirectional voltage bounds and straight offsets share the same calibrated range.
     public static final PodCalibration frontLeft = new PodCalibration(FRONT_LEFT_STRAIGHT_ENCODER_DEG, 0.034, 3.228);
     public static final PodCalibration frontRight = new PodCalibration(FRONT_RIGHT_STRAIGHT_ENCODER_DEG, 0.036, 3.211);
     public static final PodCalibration backLeft = new PodCalibration(BACK_LEFT_STRAIGHT_ENCODER_DEG, 0.028, 3.251);
     public static final PodCalibration backRight = new PodCalibration(BACK_RIGHT_STRAIGHT_ENCODER_DEG, 0.036, 3.239);
+
+    static {
+        frontRight.driveDirection = DcMotorSimple.Direction.FORWARD;
+        backLeft.driveDirection = DcMotorSimple.Direction.REVERSE;
+        frontLeft.p = 0.3;
+        frontLeft.i = 0.0;
+        frontLeft.d = 0.03;
+        frontLeft.f = 0.07;
+        frontRight.p = 0.36;
+        frontRight.i = 0.0;
+        frontRight.d = 0.04;
+        frontRight.f = 0.07;
+        backLeft.p = 0.35;
+        backLeft.i = 0.0;
+        backLeft.d = 0.04;
+        backLeft.f = 0.04;
+        backRight.p = 0.3;
+        backRight.i = 0.0;
+        backRight.d = 0.03;
+        backRight.f = 0.05;
+    }
 
     public static class PodCalibration {
         public double analogMinVoltage;
@@ -105,16 +130,13 @@ public class Constants {
     public static Follower createFollower(HardwareMap hardwareMap) {
         PinpointLocalizer localizer = new PinpointLocalizer(hardwareMap, pinpointConfig());
 
-        Swerve drivetrain = new Swerve(
-                hardwareMap,
-                swerveConfig(),
-                new PatchedCoaxialPod(hardwareMap, frontLeftPodConfig(), WHEEL_DEGREES_PER_ENCODER_REVOLUTION),
-                new PatchedCoaxialPod(hardwareMap, frontRightPodConfig(), WHEEL_DEGREES_PER_ENCODER_REVOLUTION),
-                new PatchedCoaxialPod(hardwareMap, backLeftPodConfig(), WHEEL_DEGREES_PER_ENCODER_REVOLUTION),
-                new PatchedCoaxialPod(hardwareMap, backRightPodConfig(), WHEEL_DEGREES_PER_ENCODER_REVOLUTION)
-        );
+        Swerve drivetrain = createDrivetrain(hardwareMap);
 
         return new Follower(localizer, drivetrain, new Foresight(foresightConfig()));
+    }
+
+    public static Swerve createDrivetrain(HardwareMap hardwareMap) {
+        return new Swerve(hardwareMap, swerveConfig(), createPods(hardwareMap));
     }
 
     public static CoaxialPodConfig[] podConfigs() {

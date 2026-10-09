@@ -1,12 +1,13 @@
 package org.firstinspires.ftc.teamcode.opmode.TeleOp;
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 
-@TeleOp(name = "Encoder Test", group = "Tests")
+// Superseded by the calibrated readout and encoder-direction diagnostics.
+@Disabled
 public class encoderTest extends OpMode {
     private static final double SERVO_TEST_POWER = 0.2;
     private static final double MAX_ANALOG_VOLTAGE = 3.3;

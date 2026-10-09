@@ -13,7 +13,7 @@ public class SwerveAngleTrackingTest extends OpMode {
 
     @Override
     public void init() {
-        telemetry.addLine("Align wheels forward before START. Then rotate manually; no powered motion.");
+        telemetry.addLine("Begin with wheels forward. Readout only; do not back-drive powered servo gearing.");
         telemetry.update();
     }
 
@@ -36,7 +36,7 @@ public class SwerveAngleTrackingTest extends OpMode {
         for (PatchedCoaxialPod pod : pods) {
             telemetry.addData(pod.name(), pod.debug());
         }
-        telemetry.addLine("Check 0/90/180/270 and encoder wraps in both directions.");
+        telemetry.addLine("Check commanded positions and wraps; never force powered pods by hand.");
         telemetry.update();
     }
 
