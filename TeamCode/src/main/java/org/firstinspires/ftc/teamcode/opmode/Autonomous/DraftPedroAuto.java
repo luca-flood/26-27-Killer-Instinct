@@ -1,8 +1,7 @@
 package org.firstinspires.ftc.teamcode.opmode.Autonomous;
 
-import com.pedropathing.geometry.BezierLine;
-import com.pedropathing.geometry.Pose;
-import com.pedropathing.paths.PathChain;
+import com.pedropathing.math.Pose;
+import com.pedropathing.paths.Path;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
@@ -13,6 +12,8 @@ import org.firstinspires.ftc.teamcode.control.InstantCommand;
 import org.firstinspires.ftc.teamcode.control.SequentialCommand;
 import org.firstinspires.ftc.teamcode.control.SubsystemManager;
 import org.firstinspires.ftc.teamcode.subsystem.SwerveDriveSubsystem;
+
+import static com.pedropathing.api.Paths.line;
 
 @Disabled
 @Autonomous(name = "Draft Pedro Auto", group = "Drafts")
@@ -28,10 +29,8 @@ public class DraftPedroAuto extends OpMode {
         subsystems = new SubsystemManager(drive);
         subsystems.init();
 
-        PathChain leaveStart = drive.getFollower().pathBuilder()
-                .addPath(new BezierLine(startPose, new Pose(24.0, 0.0, 0.0)))
-                .setLinearHeadingInterpolation(startPose.getHeading(), 0.0)
-                .build();
+        Path leaveStart = line(startPose, new Pose(24.0, 0.0, 0.0))
+                .linear(startPose, new Pose(24.0, 0.0, 0.0));
 
         routine = new SequentialCommand(
                 new InstantCommand(() -> telemetry.addLine("Starting draft Pedro auto")),
@@ -63,7 +62,11 @@ public class DraftPedroAuto extends OpMode {
 
     @Override
     public void stop() {
-        routine.stop(true);
-        subsystems.stop();
+        if (routine != null) {
+            routine.stop(true);
+        }
+        if (subsystems != null) {
+            subsystems.stop();
+        }
     }
 }

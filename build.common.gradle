@@ -15,16 +15,11 @@
  * updates to the FTC SDK into your code.
  */
 
-
-import org.gradle.api.JavaVersion
-
 import java.util.regex.Pattern
-
-apply plugin: 'com.android.application'
 
 android {
 
-    compileSdkVersion 34
+    compileSdkVersion 30
 
     signingConfigs {
         release {

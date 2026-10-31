@@ -4,10 +4,11 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 @TeleOp(name = "Swerve Turn Speed Test", group = "Tests")
-public class SwerveTurnSpeedTest extends OpMode {
+public abstract class SwerveTurnSpeedTest extends OpMode {
     private static final double MAX_ANALOG_VOLTAGE = 3.3;
     private static final double SERVO_TEST_POWER = 1.0;
     private static final double WHEEL_DEGREES_PER_ENCODER_REVOLUTION = 240.0;
@@ -19,13 +20,7 @@ public class SwerveTurnSpeedTest extends OpMode {
     private TurnPod frontRight;
     private TurnPod backRight;
 
-    @Override
-    public void init() {
-        frontLeft = new TurnPod("Front Left", "frontLeft1", "frontLeft2");
-        backLeft = new TurnPod("Back Left", "backLeft1", "backLeft2");
-        frontRight = new TurnPod("Front Right", "frontRight1", "frontRight2");
-        backRight = new TurnPod("Back Right", "backRight1", "backRight2");
-    }
+
 
     @Override
     public void start() {
