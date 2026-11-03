@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.opmode.TeleOp;
+package org.firstinspires.ftc.teamcode.opmode.test;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -10,8 +10,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
     //private LinearOpMode myOpMode = null;   // gain access to methods in the calling OpMode.
 
     // define velocites
-    float topTargetVel = 500;
-    float bottomTargetVel = 500;
+    float targetVel = 2000;
     float defaultVel = 0;
 //    public seangoon (LinearOpMode opmode) {
 //        myOpMode = opmode;
@@ -23,8 +22,8 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
     public void runOpMode() {
 
         // define motors, set direction
-        DcMotorEx bottomMotor = (DcMotorEx) hardwareMap.get("bottomMotor");
-        DcMotorEx topMotor = (DcMotorEx) hardwareMap.get("topMotor");
+        DcMotorEx bottomMotor = (DcMotorEx) hardwareMap.get("shootLeft");
+        DcMotorEx topMotor = (DcMotorEx) hardwareMap.get("shootRight");
         topMotor.setDirection(DcMotor.Direction.REVERSE);
         bottomMotor.setDirection(DcMotor.Direction.FORWARD);
 
@@ -32,40 +31,32 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
         waitForStart();
         while (opModeIsActive()) {
             // whole command "if" jawn
-            if (gamepad1.left_trigger >=0.5) {
-                bottomMotor.setVelocity(bottomTargetVel);
+            if (gamepad1.left_trigger >= 0.5) {
+                bottomMotor.setVelocity(-targetVel);
             }
             else {
-                bottomMotor.setVelocity(defaultVel);
+                bottomMotor.setVelocity(-targetVel);
             }
 
             if (gamepad1.right_trigger >= 0.5) {
-                topMotor.setVelocity(topTargetVel);
+                topMotor.setVelocity(targetVel);
+                bottomMotor.setVelocity(targetVel);
             }
             else {
                 topMotor.setVelocity(defaultVel);
+                bottomMotor.setVelocity(defaultVel);
             }
             if (gamepad1.a) {
-                topTargetVel = topTargetVel - 50;
+                targetVel = targetVel - 25;
             }
 
             if (gamepad1.b) {
-                topTargetVel = topTargetVel + 50;
-            }
-
-            if (gamepad1.x) {
-                bottomTargetVel = bottomTargetVel - 50;
-            }
-
-            if (gamepad1.y) {
-                bottomTargetVel = bottomTargetVel + 50;
+                targetVel = targetVel + 25;
             }
 
             // telemetry tings
-            telemetry.addData("[top] current vel: ", "%.3f", topMotor.getVelocity());
-            telemetry.addData("[top] target vel: ", "%.3f", topTargetVel);
-            telemetry.addData("[btm] current vel: ", "%.3f", bottomMotor.getVelocity());
-            telemetry.addData("[btm] target vel: ", "%.3f", bottomTargetVel);
+            telemetry.addData("CURRENT vel: ", "%.3f", topMotor.getVelocity());
+            telemetry.addData("TARGET vel: ", "%.3f", targetVel);& "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" -d tcpip 5555
             telemetry.update();
         }
 
