@@ -56,7 +56,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 
             // telemetry tings
             telemetry.addData("CURRENT vel: ", "%.3f", topMotor.getVelocity());
-            telemetry.addData("TARGET vel: ", "%.3f", targetVel);
+            telemetry.addData("TARGET vel: ", "%.3f", targetVel);& "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" -d tcpip 5555
             telemetry.update();
         }
 
