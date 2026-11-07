@@ -1,26 +1,16 @@
 package org.firstinspires.ftc.teamcode.opmode.TeleOp;
-
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-
+import com.qualcomm.robotcore.hardware.Servo;
 
 @TeleOp(name = "testing", group = "TeleOp")
 public class fullTest extends LinearOpMode {
 
-
-
-
-    //private LinearOpMode myOpMode = null;   // gain access to methods in the calling OpMode.
-
     // define velocites
     float targetVel = 2000;
     float defaultVel = 0;
-//    public seangoon (LinearOpMode opmode) {
-//        myOpMode = opmode;
-//    }
-
 
     // start runopmode
     @Override
@@ -37,25 +27,38 @@ public class fullTest extends LinearOpMode {
         DcMotorEx frontRight = (DcMotorEx) hardwareMap.get("frontRight");
         DcMotorEx backRight = (DcMotorEx) hardwareMap.get("backRight");
 
+        frontLeft.setDirection(DcMotor.Direction.REVERSE);
+        backLeft.setDirection(DcMotor.Direction.FORWARD);
+        frontRight.setDirection(DcMotor.Direction.REVERSE);
+        backRight.setDirection(DcMotor.Direction.REVERSE);
+
+        DcMotorEx intake = (DcMotorEx) hardwareMap.get("intake");
+        intake.setDirection(DcMotor.Direction.FORWARD);
+
+        Servo blocker = hardwareMap.get(Servo.class, "blocker");
+
         // LOOP
         waitForStart();
+
+
+
+        double blockerPos = blocker.getPosition();
+        double blockerTarget = 0.5;
+        double intakeVelo = intake.getVelocity();
+
         while (opModeIsActive()) {
             // whole command "if" jawn
             if (gamepad1.left_trigger >= 0.5) {
                 bottomMotor.setVelocity(-targetVel);
             }
-            else {
-                bottomMotor.setVelocity(-targetVel);
-            }
-
             if (gamepad1.right_trigger >= 0.5) {
-                topMotor.setVelocity(targetVel);
                 bottomMotor.setVelocity(targetVel);
             }
-            else {
-                topMotor.setVelocity(defaultVel);
-                bottomMotor.setVelocity(defaultVel);
+              else{
+                topMotor.setPower(0);
+                bottomMotor.setPower(0);
             }
+
             if (gamepad1.a) {
                 targetVel = targetVel - 25;
             }
@@ -63,6 +66,32 @@ public class fullTest extends LinearOpMode {
             if (gamepad1.b) {
                 targetVel = targetVel + 25;
             }
+
+            if(gamepad1.right_bumper){
+                intake.setPower(1);
+            }
+            else if(gamepad1.left_bumper){
+                intake.setPower(-1);
+            }
+            else{
+                intake.setPower(0);
+            }
+
+            if(gamepad1.x){
+                blocker.setPosition(1);
+            }
+//                blocker.setPosition(blockerTarget);
+//                blockerTarget += 0.05;
+
+            if(gamepad1.y){
+                blocker.setPosition(0.5);
+//                blocker.setPosition(blockerTarget);
+//                blockerTarget -= 0.05;
+            }
+            else{
+                blocker.setPosition(1);
+            }
+
 
 // mecanum drive Code
             double y = gamepad1.left_stick_y;
@@ -106,16 +135,14 @@ public class fullTest extends LinearOpMode {
             }
 
 
-
             // telemetry tings
             telemetry.addData("CURRENT vel: ", "%.3f", topMotor.getVelocity());
             telemetry.addData("TARGET vel: ", "%.3f", targetVel);
+            telemetry.addData("intake vel: ", "%.3f", intakeVelo);
+            telemetry.addData("blocker pos: ", "%.3f", blockerPos);
+            telemetry.update();
         }
-
-
-
     }
-
 }
 
 
