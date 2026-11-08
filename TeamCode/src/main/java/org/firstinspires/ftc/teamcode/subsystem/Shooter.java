@@ -13,25 +13,33 @@ import dev.nextftc.robot.Mechanism;
 import dev.nextftc.units.Units;
 
 /**
- * Two-motor flywheel shooter. Left motor (port 0) is the leader, right
- * motor (port 1) follows it reversed. Must be listed in
+ * Two-motor flywheel shooter. Right motor (control hub port 3, has the
+ * encoder) is the leader; left motor (expansion hub port 2) follows. Must be listed in
  * KillerInstinctRobot#getMechanisms() to receive its default command.
  */
 public class Shooter implements Mechanism {
+    // Drop motors left over from earlier Sloth reloads so they don't claim the same ports twice.
+    private static final boolean LOOP_CLEARED = clearStaleMotors();
+
+    private static boolean clearStaleMotors() {
+        NextMotor.Companion.getMotorEventLoop().clear();
+        return true;
+    }
+
     private final NextMotor left = new NextMotor(
-            RobotController.controlHub(),
-            0,
+            RobotController.expansionHub(),
+            2,
             Units.Rotations.of(1.0 / ShooterConstants.TICKS_PER_REV));
     private final NextMotor right = new NextMotor(
             RobotController.controlHub(),
-            1,
+            3,
             Units.Rotations.of(1.0 / ShooterConstants.TICKS_PER_REV));
 
     public Shooter() {
-        setVelocityGains(
-                ShooterConstants.KP, ShooterConstants.KI,
-                ShooterConstants.KD, ShooterConstants.KS,
-                ShooterConstants.KV, ShooterConstants.KA);
+        left.setDirection(NextMotor.Direction.REVERSE);
+        setPID(ShooterConstants.KP, ShooterConstants.KD);
+        setKS(ShooterConstants.KS);
+        setKV(ShooterConstants.KV);
     }
 
     /**
@@ -39,38 +47,44 @@ public class Shooter implements Mechanism {
      * once within ShooterConstants.RPM_TOLERANCE of it.
      */
     public Command goToRPM(double rpm) {
-        return sequential(followLeft(), spinTo(rpm));
+        return sequential(followRight(), spinTo(rpm));
     }
 
-    /** Makes the right motor follow the left motor in reverse. */
-    public Command followLeft() {
+    /** Makes the left motor copy the right motor, which has the encoder. */
+    public Command followRight() {
         return instant(() ->
-                right.follow(left, NextMotor.Direction.REVERSE));
+                left.follow(right, NextMotor.Direction.FORWARD));
     }
 
     private Command spinTo(double rpm) {
         return Command.build()
-                .setStart(() -> left.setVelocitySetpoint(
+                .setStart(() -> right.setVelocitySetpoint(
                         Units.Rotations.per(Units.Minutes).of(rpm)))
                 .setDone(() -> Math.abs(getRPM() - rpm)
                         < ShooterConstants.RPM_TOLERANCE)
                 .requiring(this);
     }
 
-    public void setVelocityGains(
-            double kP, double kI, double kD,
-            double kS, double kV, double kA) {
-        MotorVelocityConstants gains = left.getVelocityConstants();
+    public void setPID(double kP, double kD) {
+        MotorVelocityConstants gains = right.getVelocityConstants();
         gains.setKP(kP);
-        gains.setKI(kI);
         gains.setKD(kD);
-        gains.setKS(kS);
-        gains.setKV(kV);
-        gains.setKA(kA);
+    }
+
+    public void setKV(double kV) {
+        right.getVelocityConstants().setKV(kV);
+    }
+
+    public void setKS(double kS) {
+        right.getVelocityConstants().setKS(kS);
+    }
+
+    public double getRotations() {
+        return right.getEncoderPosition().into(Units.Rotations);
     }
 
     public double getRPM() {
-        return left.getEncoderVelocity()
+        return right.getEncoderVelocity()
                 .into(Units.Rotations.per(Units.Minutes));
     }
 }

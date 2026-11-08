@@ -13,11 +13,11 @@ public final class RobotConstants {
         public static final double RPM_TOLERANCE = 50.0;
 
         // Tuned velocity gains; copy results from Shooter Subsystem Test
-        public static final double KP = 0.0;
+        public static final double KP = 0.0001;
         public static final double KI = 0.0;
         public static final double KD = 0.0;
-        public static final double KS = 0.0;
-        public static final double KV = 0.0;
+        public static final double KS = 0.025;
+        public static final double KV = 0.00014;
         public static final double KA = 0.0;
     }
 }
