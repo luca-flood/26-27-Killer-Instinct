@@ -21,7 +21,10 @@ public class Tuning {
     public static Procedure pinpointTuner() {
         return new PinpointTuner();
     }
-
+    @Tuner
+    public static Procedure mecanumTuner() {
+        return new MecanumTuner();
+    }
     @Tuner
     public static Procedure foresightTuner() {
         return new ForesightTuner((hardwareMap) -> new PinpointLocalizer(hardwareMap, Constants.localizerConfig), (hardwareMap) -> new Mecanum(hardwareMap, Constants.drivetrainConfig));

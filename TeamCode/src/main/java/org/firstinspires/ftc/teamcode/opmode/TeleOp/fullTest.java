@@ -17,15 +17,16 @@ public class fullTest extends LinearOpMode {
     public void runOpMode() {
 
         // define motors, set direction
-        DcMotorEx bottomMotor = (DcMotorEx) hardwareMap.get("shootLeft");
-        DcMotorEx topMotor = (DcMotorEx) hardwareMap.get("shootRight");
-        topMotor.setDirection(DcMotor.Direction.REVERSE);
-        bottomMotor.setDirection(DcMotor.Direction.FORWARD);
 
         DcMotorEx frontLeft = (DcMotorEx) hardwareMap.get("frontLeft");
         DcMotorEx backLeft = (DcMotorEx) hardwareMap.get("backLeft");
         DcMotorEx frontRight = (DcMotorEx) hardwareMap.get("frontRight");
         DcMotorEx backRight = (DcMotorEx) hardwareMap.get("backRight");
+
+        DcMotorEx topMotor = (DcMotorEx) hardwareMap.get("shootRight");
+        DcMotorEx bottomMotor = (DcMotorEx) hardwareMap.get("shootLeft");
+        topMotor.setDirection(DcMotor.Direction.REVERSE);
+        bottomMotor.setDirection(DcMotor.Direction.FORWARD);
 
         frontLeft.setDirection(DcMotor.Direction.REVERSE);
         backLeft.setDirection(DcMotor.Direction.FORWARD);
