@@ -1,27 +1,41 @@
 package org.firstinspires.ftc.teamcode.opmode.Autonomous;
 
-import static com.pedropathing.api.Paths.*;
-import com.pedropathing.api.Paths;
-
-import com.pedropathing.api.PoseFactory;
-import com.pedropathing.follower.Follower;
-import com.pedropathing.math.Pose;
-import com.pedropathing.paths.Path;
-import com.pedropathing.ivy.Command;
-import com.pedropathing.ivy.Scheduler;
-import static com.pedropathing.ivy.Scheduler.schedule;
-import static com.pedropathing.ivy.commands.Commands.*;
+import static com.pedropathing.ivy.commands.Commands.instant;
+import static com.pedropathing.ivy.commands.Commands.waitMs;
 import static com.pedropathing.ivy.groups.Groups.sequential;
 import static com.pedropathing.ivy.pedro.PedroCommands.follow;
+
+import com.pedropathing.api.Paths;
+import com.pedropathing.api.PoseFactory;
+import com.pedropathing.follower.Follower;
+import com.pedropathing.ivy.Command;
+import com.pedropathing.ivy.Scheduler;
+import com.pedropathing.math.Pose;
+import com.pedropathing.paths.Path;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.Servo;
 
+import org.firstinspires.ftc.teamcode.control.SequentialCommand;
 import org.firstinspires.ftc.teamcode.pedro.Constants;
 
 @Autonomous(name = "AutoPath1", group = "Autonomous")
 public class redAuto1gonner extends LinearOpMode {
 
+    private static final double BLOCKER_CLOSED_POSITION = 0.5;
+    private static final int OUTTAKE_SPIN_UP_MS = 2000;
+    private static final int INTAKE_FEED_MS = 3000;
+
     private Follower follower;
+
+    private DcMotorEx topMotor;
+    private DcMotorEx bottomMotor;
+    private DcMotorEx intake;
+    private Servo blocker;
+
+    private Servo flower;
 
     private final PoseFactory poseFactory = PoseFactory.degrees();
 
@@ -48,38 +62,88 @@ public class redAuto1gonner extends LinearOpMode {
     // Autonomous routine
     public Command autoRoutine() {
         return sequential(
+                autoshoot(),
                 follow(follower, path1()),
                 follow(follower, path2()),
+                autoshoot(),
                 follow(follower, path3()),
                 follow(follower, path4()),
+                autoshoot(),
                 follow(follower, path5())
         );
     }
 
+    public Command autoshoot(){
+        return sequential(
+                instant(() -> {
+                    blocker.setPosition(1);
+                    topMotor.setVelocity(1680);
+                    bottomMotor.setVelocity(1680);
+                }),
+                waitMs(1500),
+                instant(() -> {
+                    blocker.setPosition(0.5);
+                    intake.setPower(0.6);
+                }),
+                waitMs(2000),
+                instant(() -> {
+                    intake.setPower(0);
+                    blocker.setPosition(1);
+                    topMotor.setPower(0);
+                    bottomMotor.setPower(0);
+                })
+        );
+    }
+
+
+
     @Override
     public void runOpMode() {
+        topMotor = hardwareMap.get(DcMotorEx.class, "shootRight");
+        bottomMotor = hardwareMap.get(DcMotorEx.class, "shootLeft");
+        topMotor.setDirection(DcMotor.Direction.REVERSE);
+        bottomMotor.setDirection(DcMotor.Direction.FORWARD);
+
+        intake = hardwareMap.get(DcMotorEx.class, "intake");
+        intake.setDirection(DcMotor.Direction.FORWARD);
+
+        blocker = hardwareMap.get(Servo.class, "blocker");
+        flower = hardwareMap.get(Servo.class, "flower");
+
         Scheduler.reset();
         follower = Constants.create(hardwareMap);
         follower.setPose(start);
         follower.update();
 
+        flower.setPosition(0);
+
         waitForStart();
-        schedule(autoRoutine());
+        if (isStopRequested()) {
+            return;
+        }
 
-        while (opModeIsActive()) {
-            follower.update();
-            Scheduler.execute();
+        Command routine = autoRoutine();
+        try {
+            Scheduler.schedule(routine);
+            while (opModeIsActive()) {
+                follower.update();
+                Scheduler.execute();
 
-            telemetry.addData("x", follower.pose().x());
-            telemetry.addData("y", follower.pose().y());
-            telemetry.addData("heading", follower.pose().heading());
+                telemetry.addData("x", follower.pose().x());
+                telemetry.addData("y", follower.pose().y());
+                telemetry.addData("heading", follower.pose().heading());
 
-            if (follower.currentPath() != null) {
-                telemetry.addData("Current path distance remaining", follower.distanceToEndpoint());
-                telemetry.addData("Path number", follower.pathIndex());
+                if (follower.currentPath() != null) {
+                    telemetry.addData("Current path distance remaining", follower.distanceToEndpoint());
+                    telemetry.addData("Path number", follower.pathIndex());
+                    telemetry.addData("right CURRENT vel: ", "%.3f", topMotor.getVelocity());
+                    telemetry.addData("left CURRENT vel: ", "%.3f", bottomMotor.getVelocity());
+                }
+
+                telemetry.update();
             }
-
-            telemetry.update();
+        } finally {
+            Scheduler.cancel(routine);
         }
     }
 

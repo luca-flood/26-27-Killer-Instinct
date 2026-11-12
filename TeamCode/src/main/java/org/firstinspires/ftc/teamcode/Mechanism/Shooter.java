@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.subsystem;
+package org.firstinspires.ftc.teamcode.Mechanism;
 
 import static com.pedropathing.ivy.groups.Groups.sequential;
 
@@ -6,45 +6,34 @@ import com.pedropathing.ivy.Command;
 
 import org.firstinspires.ftc.teamcode.RobotConstants.ShooterConstants;
 
-import dev.nextftc.hardware.RobotController;
 import dev.nextftc.hardware.actuators.MotorVelocityConstants;
 import dev.nextftc.hardware.actuators.NextMotor;
 import dev.nextftc.robot.Mechanism;
 import dev.nextftc.units.Units;
 
 /**
- * Two-motor flywheel shooter. Right motor (control hub port 3, has the
- * encoder) is the leader; left motor (expansion hub port 2) follows. Must be listed in
- * KillerInstinctRobot#getMechanisms() to receive its default command.
+ * Two-motor flywheel shooter. The right motor has the encoder and the left
+ * motor follows its power.
  */
 public class Shooter implements Mechanism {
-    // Drop motors left over from earlier Sloth reloads so they don't claim the same ports twice.
-    private static final boolean LOOP_CLEARED = clearStaleMotors();
-
-    private static boolean clearStaleMotors() {
-        NextMotor.Companion.getMotorEventLoop().clear();
-        return true;
-    }
-
-    private final NextMotor left = new NextMotor(
-            RobotController.expansionHub(),
-            2,
-            Units.Rotations.of(1.0 / ShooterConstants.TICKS_PER_REV));
     private final NextMotor right = new NextMotor(
-            RobotController.controlHub(),
-            3,
+            "shootRight",
+            Units.Rotations.of(1.0 / ShooterConstants.TICKS_PER_REV));
+    private final NextMotor left = new NextMotor(
+            "shootLeft",
             Units.Rotations.of(1.0 / ShooterConstants.TICKS_PER_REV));
 
     public Shooter() {
-        left.setDirection(NextMotor.Direction.REVERSE);
+        right.setDirection(NextMotor.Direction.REVERSE);
+        left.setDirection(NextMotor.Direction.FORWARD);
         setPID(ShooterConstants.KP, ShooterConstants.KD);
         setKS(ShooterConstants.KS);
         setKV(ShooterConstants.KV);
     }
 
     /**
-     * Follows the left motor, then spins up to the given RPM; finishes
-     * once within ShooterConstants.RPM_TOLERANCE of it.
+     * Spins up to the given RPM and finishes once the right motor is within
+     * ShooterConstants.RPM_TOLERANCE of the target.
      */
     public Command goToRPM(double rpm) {
         return sequential(followRight(), spinTo(rpm));
@@ -56,13 +45,32 @@ public class Shooter implements Mechanism {
                 left.follow(right, NextMotor.Direction.FORWARD));
     }
 
+    /** Sets the target speed immediately so the caller can time the spin-up. */
+    public Command setVelocityTicksPerSecond(double ticksPerSecond) {
+        double rpm = ticksPerSecond * 60.0 / ShooterConstants.TICKS_PER_REV;
+        return instant(() -> {
+            left.follow(right, NextMotor.Direction.FORWARD);
+            setTargetRPM(rpm);
+        });
+    }
+
+    public Command stop() {
+        return instant(() -> {
+            right.setThrottle(0.0);
+            left.setThrottle(0.0);
+        });
+    }
+
     private Command spinTo(double rpm) {
         return Command.build()
-                .setStart(() -> right.setVelocitySetpoint(
-                        Units.Rotations.per(Units.Minutes).of(rpm)))
+                .setStart(() -> setTargetRPM(rpm))
                 .setDone(() -> Math.abs(getRPM() - rpm)
                         < ShooterConstants.RPM_TOLERANCE)
                 .requiring(this);
+    }
+
+    private void setTargetRPM(double rpm) {
+        right.setVelocitySetpoint(Units.Rotations.per(Units.Minutes).of(rpm));
     }
 
     public void setPID(double kP, double kD) {
@@ -86,5 +94,18 @@ public class Shooter implements Mechanism {
     public double getRPM() {
         return right.getEncoderVelocity()
                 .into(Units.Rotations.per(Units.Minutes));
+    }
+
+    public double getRightVelocityTicksPerSecond() {
+        return velocityTicksPerSecond(right);
+    }
+
+    public double getLeftVelocityTicksPerSecond() {
+        return velocityTicksPerSecond(left);
+    }
+
+    private double velocityTicksPerSecond(NextMotor motor) {
+        return motor.getEncoderVelocity().into(Units.Rotations.per(Units.Seconds))
+                * ShooterConstants.TICKS_PER_REV;
     }
 }

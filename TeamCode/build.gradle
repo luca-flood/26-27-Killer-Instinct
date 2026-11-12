@@ -39,6 +39,7 @@ android {
 
 dependencies {
     implementation project(':FtcRobotController')
+    implementation 'dev.nextftc.v2:robot:0.3.0'
 }
 
 repositories {

@@ -10,7 +10,11 @@ public class fullTest extends LinearOpMode {
 
     // define velocites
     float targetVel = 2000;
+
+    boolean open = false;
     float defaultVel = 0;
+
+    double intakeSpeed = 0.5;
 
     // start runopmode
     @Override
@@ -37,6 +41,9 @@ public class fullTest extends LinearOpMode {
         intake.setDirection(DcMotor.Direction.FORWARD);
 
         Servo blocker = hardwareMap.get(Servo.class, "blocker");
+        Servo flower = hardwareMap.get(Servo.class, "flower1");
+        Servo flower1 = hardwareMap.get(Servo.class, "flower2");
+
 
         // LOOP
         waitForStart();
@@ -46,14 +53,20 @@ public class fullTest extends LinearOpMode {
         double blockerPos = blocker.getPosition();
         double blockerTarget = 0.5;
         double intakeVelo = intake.getVelocity();
+        double flowerPos = 0.5;
+
+        flower.setPosition(flowerPos);
+        flower1.setPosition(1-flowerPos);
 
         while (opModeIsActive()) {
             // whole command "if" jawn
             if (gamepad1.left_trigger >= 0.5) {
                 bottomMotor.setVelocity(-targetVel);
+                topMotor.setVelocity(-targetVel);
             }
             if (gamepad1.right_trigger >= 0.5) {
                 bottomMotor.setVelocity(targetVel);
+                topMotor.setVelocity(targetVel);
             }
               else{
                 topMotor.setPower(0);
@@ -61,11 +74,11 @@ public class fullTest extends LinearOpMode {
             }
 
             if (gamepad1.a) {
-                targetVel = targetVel - 25;
+                targetVel = targetVel - 10;
             }
 
             if (gamepad1.b) {
-                targetVel = targetVel + 25;
+                targetVel = targetVel + 10;
             }
 
             if(gamepad1.right_bumper){
@@ -74,24 +87,47 @@ public class fullTest extends LinearOpMode {
             else if(gamepad1.left_bumper){
                 intake.setPower(-1);
             }
+            else if (gamepad1.x) {
+                intake.setPower(0.6);
+
+            }
             else{
                 intake.setPower(0);
             }
 
-            if(gamepad1.x){
-                blocker.setPosition(1);
-            }
+
 //                blocker.setPosition(blockerTarget);
 //                blockerTarget += 0.05;
 
             if(gamepad1.y){
-                blocker.setPosition(0.5);
+                if (open){
+                    blocker.setPosition(0.5);
+                    open = false;
+                }
+                else{
+                    blocker.setPosition(1);
+                    open = true;
+                }
 //                blocker.setPosition(blockerTarget);
 //                blockerTarget -= 0.05;
             }
-            else{
-                blocker.setPosition(1);
+
+            if(gamepad1.dpad_down){
+                flowerPos -= 0.005;
+                flowerPos = Math.max(0.025, flowerPos);
+                flower.setPosition(flowerPos);
+                flower1.setPosition(1-flowerPos);
+
             }
+            if (gamepad1.dpad_up){
+                flowerPos += 0.005;
+                flowerPos = Math.min(.81, flowerPos);
+                flower.setPosition(flowerPos);
+                flower1.setPosition(1-flowerPos);
+            }
+
+
+
 
 
 // mecanum drive Code
@@ -137,10 +173,13 @@ public class fullTest extends LinearOpMode {
 
 
             // telemetry tings
-            telemetry.addData("CURRENT vel: ", "%.3f", topMotor.getVelocity());
+            telemetry.addData("right CURRENT vel: ", "%.3f", topMotor.getVelocity());
+            telemetry.addData("left CURRENT vel: ", "%.3f", bottomMotor.getVelocity());
             telemetry.addData("TARGET vel: ", "%.3f", targetVel);
-            telemetry.addData("intake vel: ", "%.3f", intakeVelo);
+            telemetry.addData("intake power: ", "%.3f", intakeSpeed);
             telemetry.addData("blocker pos: ", "%.3f", blockerPos);
+            telemetry.addData("flower Pos", "%.3f", flower.getPosition());
+            telemetry.addData("left flower Pos", "%.3f", flower1.getPosition());
             telemetry.update();
         }
     }

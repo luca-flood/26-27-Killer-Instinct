@@ -11,7 +11,7 @@ import org.firstinspires.ftc.teamcode.control.FollowPathCommand;
 import org.firstinspires.ftc.teamcode.control.InstantCommand;
 import org.firstinspires.ftc.teamcode.control.SequentialCommand;
 import org.firstinspires.ftc.teamcode.control.SubsystemManager;
-import org.firstinspires.ftc.teamcode.subsystem.SwerveDriveSubsystem;
+import org.firstinspires.ftc.teamcode.Mechanism.SwerveDriveSubsystem;
 
 import static com.pedropathing.api.Paths.line;
 
