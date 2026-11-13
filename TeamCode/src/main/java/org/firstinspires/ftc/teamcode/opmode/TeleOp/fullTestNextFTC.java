@@ -32,9 +32,9 @@ public class fullTestNextFTC extends NextOpMode {
 
     @Override
     public void disabledPeriodic() {
-        robot.flower.down().schedule();
-        telemetry.addLine("Set to Low.");
-        telemetry.addData("Flower Pos: ", robot.flower.getRightPosition());
+//        robot.flower.down().schedule();
+//        telemetry.addLine("Set to Low.");
+//        telemetry.addData("Flower Pos: ", robot.flower.getRightPosition());
     }
 
     @Override
@@ -55,15 +55,15 @@ public class fullTestNextFTC extends NextOpMode {
             autoshoot().schedule();
         }
 
-        if (gamepad1.x) {
-            telemetry.addData("Flower Pos: ", robot.flower.getRightPosition());
-            if (robot.flower.getRightPosition() == 0.025) {
-                robot.flower.up().schedule();
-            }
-            else {
-                robot.flower.down().schedule();
-            }
-        }
+//        if (gamepad1.x) {
+//            telemetry.addData("Flower Pos: ", robot.flower.getRightPosition());
+//            if (robot.flower.getRightPosition() == 0.025) {
+//                robot.flower.up().schedule();
+//            }
+//            else {
+//                robot.flower.down().schedule();
+//            }
+//        }
 
 
         telemetry.addData("Right shooter velocity", "%.3f",
@@ -71,12 +71,12 @@ public class fullTestNextFTC extends NextOpMode {
         telemetry.addData("Left shooter velocity", "%.3f",
                 robot.shooter.getLeftVelocityTicksPerSecond());
         telemetry.addData("Intake power", "%.2f", intakePower);
-        telemetry.addData("Flower Right Pos :", robot.flower.getRightPosition());
-        telemetry.addData("Flower Left Pos: ", robot.flower.getLeftPosition());
+//        telemetry.addData("Flower Right Pos :", robot.flower.getRightPosition());
+//        telemetry.addData("Flower Left Pos: ", robot.flower.getLeftPosition());
         if (blockerBlocked != null) {
             telemetry.addData("Blocker target", blockerBlocked ? "Blocking" : "Feed");
         }
-        telemetry.addData("Flower target position", "%.2f", robot.flower.getRightPosition());
+//        telemetry.addData("Flower target position", "%.2f", robot.flower.getRightPosition());
         telemetry.update();
     }
 
@@ -85,9 +85,9 @@ public class fullTestNextFTC extends NextOpMode {
 
         double velocity = 0.0;
         if (gamepad1.right_trigger >= SHOOTER_TRIGGER_THRESHOLD) {
-            velocity = 1680;
+            velocity = 1660;
         } else if (gamepad1.left_trigger >= SHOOTER_TRIGGER_THRESHOLD) {
-            velocity = -1680;
+            velocity = -1660;
         }
 
         if (velocity != commandedVelocity) {
@@ -121,12 +121,13 @@ public class fullTestNextFTC extends NextOpMode {
 
     private Command autoshoot() {
         return sequential(
-                parallel(robot.blocker.block(),
-                        robot.shooter.setVelocityTicksPerSecond(1700)),
+                robot.blocker.block(),
+                robot.shooter.setVelocityTicksPerSecond(1660),
                 waitMs(2500),
-                parallel(robot.blocker.allowFeed(), robot.intake.eat),
+                robot.blocker.allowFeed(),
+                robot.intake.eat(),
                 waitMs(2000),
-                parallel(robot.intake.sleep, robot.blocker.block(), robot.shooter.stop())
+                parallel(robot.intake.sleep(), robot.blocker.block(), robot.shooter.stop())
         );
     }
 }

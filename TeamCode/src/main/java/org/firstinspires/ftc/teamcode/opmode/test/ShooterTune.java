@@ -16,10 +16,10 @@ import dev.nextftc.robot.triggers.CommandGamepad;
 public class ShooterTune extends NextOpMode {
 
     private final KillerInstinctRobot robot;
-    private double kP = 0;
-    private double kD = 0;
-    private double kV = 0;
-    private double kS = 0;
+    private double kP = 0.00027;
+    private double kD = 0.0009;
+    private double kV = 0.00029;
+    private double kS = 0.125;
 
     private double targetRPM;
     public ShooterTune(KillerInstinctRobot robot) {
