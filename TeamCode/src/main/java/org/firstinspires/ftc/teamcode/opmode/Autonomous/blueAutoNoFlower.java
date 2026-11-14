@@ -27,8 +27,10 @@ public class blueAutoNoFlower extends NextOpMode {
     private final PoseFactory poseFactory = PoseFactory.degrees();
 
     private final Pose start = poseFactory.of(83, 137, 270);
+    private final Pose point1 = poseFactory.of(106.6773, 129.3482, 240);
+    private final Pose path1Start = poseFactory.of(106.6773, 129.3482, 240);
     private final Pose path1 = poseFactory.of(131.6499, 34.5232, 180);
-    private final Pose path1Control1 = poseFactory.of(141.5, 141.5, 0);
+    private final Pose path1Control1 = poseFactory.of(141.5, 125.8385, 0);
     private final Pose path1Control2 = poseFactory.of(94.1512, 45.3878, 0);
 
 
@@ -44,15 +46,16 @@ public class blueAutoNoFlower extends NextOpMode {
     // Autonomous routine
     public Command autoRoutine() {
         return sequential(
-                autoshoot(),
                 follow(follower, path1()),
+                autoshoot(),
+                follow(follower,path1_2()),
                 robot.blocker.allowFeed()
         );
     }
 
     public Command autoshoot() {
         return sequential(
-                robot.shooter.setVelocityTicksPerSecond(1640),
+                robot.shooter.setVelocityTicksPerSecond(1660),
                 waitMs(2500),
                 robot.intake.eat(),
                 waitMs(2000),
@@ -86,6 +89,10 @@ public class blueAutoNoFlower extends NextOpMode {
     }
 
     public Path path1() {
-        return Paths.curve(start, path1Control1, path1Control2, path1).linear(start, path1);
+        return Paths.line(start, point1).linear(start, point1);
+    }
+
+    public Path path1_2() {
+        return Paths.curve(path1Start, path1Control1, path1Control2, path1).linear(path1Start, path1);
     }
 }
