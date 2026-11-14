@@ -26,12 +26,13 @@ public class blueAutoNoFlower extends NextOpMode {
 
     private final PoseFactory poseFactory = PoseFactory.degrees();
 
+
     private final Pose start = poseFactory.of(83, 137, 270);
-    private final Pose point1 = poseFactory.of(106.6773, 129.3482, 240);
-    private final Pose path1Start = poseFactory.of(106.6773, 129.3482, 240);
-    private final Pose path1 = poseFactory.of(131.6499, 34.5232, 180);
-    private final Pose path1Control1 = poseFactory.of(141.5, 125.8385, 0);
-    private final Pose path1Control2 = poseFactory.of(94.1512, 45.3878, 0);
+    private final Pose point1 = poseFactory.of(106.773, 129.3842, 240);
+    private final Pose path2Start = poseFactory.of(106.773, 129.3842, 240);
+    private final Pose path2 = poseFactory.of(132, 33, 180);
+    private final Pose path2Control1 = poseFactory.of(129.4807, 120.7394, 0);
+    private final Pose path2Control2 = poseFactory.of(103.8031, 51.2153, 0);
 
 
     public blueAutoNoFlower(KillerInstinctRobot robot) {
@@ -48,7 +49,7 @@ public class blueAutoNoFlower extends NextOpMode {
         return sequential(
                 follow(follower, path1()),
                 autoshoot(),
-                follow(follower,path1_2()),
+                follow(follower,path2()),
                 robot.blocker.allowFeed()
         );
     }
@@ -92,7 +93,7 @@ public class blueAutoNoFlower extends NextOpMode {
         return Paths.line(start, point1).linear(start, point1);
     }
 
-    public Path path1_2() {
-        return Paths.curve(path1Start, path1Control1, path1Control2, path1).linear(path1Start, path1);
+    public Path path2() {
+        return Paths.curve(path2Start, path2Control1, path2Control2, path2).linear(path2Start, path2);
     }
 }

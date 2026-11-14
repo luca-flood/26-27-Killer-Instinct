@@ -30,8 +30,7 @@ public class redAutoNoFlower extends NextOpMode {
 
     private final Pose start = poseFactory.of(59.5, 7, 90);
     private final Pose point1 = poseFactory.of(34.3793, 15.529, 60);
-    private final Pose path2Start = poseFactory.of(34.3793, 15.529, 60);
-    private final Pose path2 = poseFactory.of(10, 105, 0);
+    private final Pose path2 = poseFactory.of(15, 105, 0);
     private final Pose path2Control1 = poseFactory.of(0, 27.6808, 0);
     private final Pose path2Control2 = poseFactory.of(39.7299, 102.0242, 0);
 
@@ -95,7 +94,7 @@ public class redAutoNoFlower extends NextOpMode {
     }
 
     public Path path2() {
-        return Paths.curve(path2Start, path2Control1, path2Control2, path2).linear(path2Start, path2);
+        return Paths.curve(point1, path2Control1, path2Control2, path2).linear(point1, path2);
     }
 
 }
