@@ -39,10 +39,12 @@ public class fullTestNextFTC extends NextOpMode {
 
     @Override
     public void start() {
+        blockerBlocked = false;
+        robot.blocker.allowFeed();
         robot.drivetrain.drive(gamepad1, gamepad2).schedule();
 
         CommandGamepad driver = new CommandGamepad(gamepad1);
-        driver.y().onTrue(lazy(this::toggleBlocker).requiring(robot.blocker));
+
     }
 
     @Override
@@ -53,6 +55,10 @@ public class fullTestNextFTC extends NextOpMode {
         if (gamepad1.a){
             telemetry.addLine("Running Autoshoot");
             autoshoot().schedule();
+        }
+
+        if (gamepad1.y){
+            robot.blocker.allowFeed();
         }
 
 //        if (gamepad1.x) {
@@ -85,9 +91,9 @@ public class fullTestNextFTC extends NextOpMode {
 
         double velocity = 0.0;
         if (gamepad1.right_trigger >= SHOOTER_TRIGGER_THRESHOLD) {
-            velocity = 1660;
+            velocity = 1620;
         } else if (gamepad1.left_trigger >= SHOOTER_TRIGGER_THRESHOLD) {
-            velocity = -1660;
+            velocity = -1620;
         }
 
         if (velocity != commandedVelocity) {
@@ -121,13 +127,12 @@ public class fullTestNextFTC extends NextOpMode {
 
     private Command autoshoot() {
         return sequential(
-                robot.blocker.block(),
-                robot.shooter.setVelocityTicksPerSecond(1660),
+                robot.shooter.setVelocityTicksPerSecond(1620),
                 waitMs(2500),
                 robot.blocker.allowFeed(),
                 robot.intake.eat(),
                 waitMs(2000),
-                parallel(robot.intake.sleep(), robot.blocker.block(), robot.shooter.stop())
+                parallel(robot.intake.sleep(), robot.shooter.stop())
         );
     }
 }

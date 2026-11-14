@@ -4,6 +4,7 @@ import static com.pedropathing.ivy.commands.Commands.instant;
 import static com.pedropathing.ivy.commands.Commands.lazy;
 
 import com.pedropathing.ivy.Command;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 import org.firstinspires.ftc.teamcode.KillerInstinctRobot;
 
@@ -12,6 +13,7 @@ import dev.nextftc.robot.opmode.NextOpMode;
 import dev.nextftc.robot.opmode.NextTeleop;
 import dev.nextftc.robot.triggers.CommandGamepad;
 
+@Disabled
 @NextTeleop(name = "Shooter Tuning")
 public class ShooterTune extends NextOpMode {
 

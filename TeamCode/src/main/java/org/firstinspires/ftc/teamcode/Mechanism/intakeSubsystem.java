@@ -9,13 +9,11 @@ import dev.nextftc.robot.Mechanism;
 public final class intakeSubsystem implements Mechanism {
     private final NextMotor intake = new NextMotor("intake");
 
-
-
-    public Command eat(){
-        return instant(() -> setSuck(0.55));
+    public Command eat() {
+        return setSuck(0.55);
     }
-    public final Command sleep (){
-        return instant(() -> setSuck(0.0));
+    public final Command sleep() {
+        return setSuck(0.0);
     }
 
     public intakeSubsystem() {
@@ -25,5 +23,7 @@ public final class intakeSubsystem implements Mechanism {
     public Command setSuck(double power) {
         return instant(() -> intake.setThrottle(Range.clip(power, -1.0, 1.0)));
     }
+
+
 
 }

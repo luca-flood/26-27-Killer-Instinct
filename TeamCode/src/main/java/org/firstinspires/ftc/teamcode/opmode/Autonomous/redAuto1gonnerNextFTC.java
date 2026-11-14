@@ -13,6 +13,7 @@ import com.pedropathing.ivy.Command;
 import com.pedropathing.ivy.Scheduler;
 import com.pedropathing.math.Pose;
 import com.pedropathing.paths.Path;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 import org.firstinspires.ftc.teamcode.KillerInstinctRobot;
 import org.firstinspires.ftc.teamcode.pedro.Constants;
@@ -20,6 +21,7 @@ import org.firstinspires.ftc.teamcode.pedro.Constants;
 import dev.nextftc.robot.opmode.NextAutonomous;
 import dev.nextftc.robot.opmode.NextOpMode;
 
+@Disabled
 @NextAutonomous(name = "Red Auto Flower", group = "Autonomous")
 public class redAuto1gonnerNextFTC extends NextOpMode {
 

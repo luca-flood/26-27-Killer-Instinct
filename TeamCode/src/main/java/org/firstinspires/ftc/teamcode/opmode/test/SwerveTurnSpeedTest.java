@@ -1,11 +1,13 @@
 package org.firstinspires.ftc.teamcode.opmode.test;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+@Disabled
 @TeleOp(name = "Swerve Turn Speed Test", group = "Tests")
 public abstract class SwerveTurnSpeedTest extends OpMode {
     private static final double MAX_ANALOG_VOLTAGE = 3.3;

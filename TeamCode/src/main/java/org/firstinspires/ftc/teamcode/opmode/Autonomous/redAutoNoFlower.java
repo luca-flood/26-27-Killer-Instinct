@@ -47,13 +47,14 @@ public class redAutoNoFlower extends NextOpMode {
     public Command autoRoutine() {
         return sequential(
                 autoshoot(),
-                follow(follower, path1())
+                follow(follower, path1()),
+                robot.blocker.allowFeed()
         );
     }
 
     public Command autoshoot() {
         return sequential(
-                robot.shooter.setVelocityTicksPerSecond(1660),
+                robot.shooter.setVelocityTicksPerSecond(1640),
                 waitMs(2500),
                 robot.intake.eat(),
                 waitMs(2000),
@@ -73,8 +74,6 @@ public class redAutoNoFlower extends NextOpMode {
         telemetry.addData("x", follower.pose().x());
         telemetry.addData("y", follower.pose().y());
         telemetry.addData("heading", follower.pose().heading());
-        telemetry.addData("Flower targets (right / left)", "%.3f / %.3f",
-                robot.flower.getRightPosition(), robot.flower.getLeftPosition());
         telemetry.addData("right CURRENT vel: ", "%.3f",
                 robot.shooter.getRightVelocityTicksPerSecond());
         telemetry.addData("left CURRENT vel: ", "%.3f",
