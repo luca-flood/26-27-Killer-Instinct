@@ -1,0 +1,94 @@
+<section id="biobuzz-hive-states" aria-labelledby="biobuzz-hive-title">
+  <style>
+    #biobuzz-hive-states { display: grid; gap: calc(var(--font-size-base) * .75); }
+    #biobuzz-hive-states .hive-view { display: grid; justify-items: center; }
+    #biobuzz-hive-states .hive-view svg { display: block; width: 100%; max-width: 470px; }
+    #biobuzz-hive-states .hive-cells { width: 100%; max-width: 470px; display: grid; grid-template-columns: 1fr 1fr; gap: calc(var(--font-size-base) * .5); }
+    #biobuzz-hive-states .hive-cell { display: grid; justify-items: center; text-align: center; }
+    #biobuzz-hive-states .hive-status { margin-top: calc(var(--font-size-base) * .5); text-align: center; }
+    #biobuzz-hive-states .cell-body { fill: var(--background); stroke: var(--muted-foreground); }
+    #biobuzz-hive-states .cell-body[data-up="true"] { fill: color-mix(in srgb, var(--viz-series-1) 17%, var(--background)); stroke: var(--viz-series-1); }
+    #biobuzz-hive-states .hive-frame { fill: none; stroke: var(--border); }
+    #biobuzz-hive-states .hive-beam { stroke: var(--muted-foreground); }
+  </style>
+  <h2 id="biobuzz-hive-title">BIOBUZZ HIVE states</h2>
+  <div class="viz-controls">
+    <label class="form-label">Alliance
+      <select class="form-select" data-alliance>
+        <option value="red">Red</option>
+        <option value="blue">Blue</option>
+      </select>
+    </label>
+    <label class="form-label">HIVE position
+      <select class="form-select" data-position>
+        <option value="reset">Match reset</option>
+        <option value="moving">In transition</option>
+        <option value="opposite">Settled after one tip</option>
+      </select>
+    </label>
+  </div>
+  <div class="hive-view">
+    <svg viewBox="0 0 340 108" role="img" aria-label="Schematic side view of two cells on the same rotating beam. The bright outlined cell is raised.">
+      <path class="hive-frame" d="M128 98L170 49L212 98ZM38 98H302" stroke-width="2"/>
+      <g data-beam transform="rotate(-12 170 49)">
+        <path class="hive-beam" d="M73 49H267" fill="none" stroke-width="4"/>
+        <path class="cell-body" data-scoring-shape d="M44 32H102L96 52H50Z" stroke-width="2"/>
+        <path class="cell-body" data-audience-shape data-up="true" d="M238 32H296L290 52H244Z" stroke-width="2"/>
+      </g>
+      <circle cx="170" cy="49" r="5" fill="var(--foreground)"/>
+    </svg>
+    <div class="hive-cells">
+      <div class="hive-cell"><span>Scoring table side</span><code data-scoring-ids>30–33</code><span class="text-small" data-scoring-level>Down</span></div>
+      <div class="hive-cell"><span>Audience side</span><code data-audience-ids>34–37</code><span class="text-small" data-audience-level>Up</span></div>
+    </div>
+    <p class="hive-status" data-status aria-live="polite">Red audience cell up at reset.</p>
+  </div>
+  <p class="text-small text-muted">Schematic angles. Tag IDs and reset states from the FIRST Arena manual and Field Reset Guide.</p>
+  <script>
+    (() => {
+      const root = document.getElementById('biobuzz-hive-states');
+      const get = (key) => root.querySelector(`[data-${key}]`);
+      const alliance = get('alliance');
+      const position = get('position');
+      const cells = {
+        red: { scoring: '30–33', audience: '34–37', reset: 'audience' },
+        blue: { scoring: '42–45', audience: '38–41', reset: 'scoring' },
+      };
+      function render() {
+        const color = alliance.value;
+        const config = cells[color];
+        const stage = position.value;
+        const opposite = config.reset === 'audience' ? 'scoring' : 'audience';
+        const up = stage === 'moving' ? null : stage === 'reset' ? config.reset : opposite;
+        get('beam').setAttribute('transform', `rotate(${up === 'audience' ? -12 : up === 'scoring' ? 12 : 0} 170 49)`);
+        for (const side of ['scoring', 'audience']) {
+          get(`${side}-ids`).textContent = config[side];
+          get(`${side}-shape`).dataset.up = String(up === side);
+          get(`${side}-level`).textContent = up === null ? 'Moving' : up === side ? 'Up' : 'Down';
+        }
+        const allianceLabel = color === 'red' ? 'Red' : 'Blue';
+        const sideLabel = up === 'scoring' ? 'scoring table' : 'audience';
+        get('status').textContent = up === null
+          ? 'Transition. Pause feeding and pose correction.'
+          : `${allianceLabel} ${sideLabel} cell up ${stage === 'reset' ? 'at reset' : 'after one confirmed tip'}.`;
+      }
+      function save() {
+        render();
+        window.openai?.setWidgetState?.({
+          modelContent: { alliance: alliance.value, hivePosition: position.value },
+          privateContent: null,
+        })?.catch(() => {});
+      }
+      function restore(state) {
+        const selected = state?.modelContent;
+        if (selected && Object.hasOwn(cells, selected.alliance)) alliance.value = selected.alliance;
+        if (selected && ['reset', 'moving', 'opposite'].includes(selected.hivePosition)) position.value = selected.hivePosition;
+        render();
+      }
+      alliance.addEventListener('change', save);
+      position.addEventListener('change', save);
+      window.addEventListener('openai:set_globals', (event) => restore(event.detail.globals.widgetState));
+      restore(window.openai?.widgetState);
+    })();
+  </script>
+</section>

@@ -1,0 +1,97 @@
+<section id="bluepower-hinge-pose" aria-labelledby="bluepower-hinge-title">
+  <style>
+    #bluepower-hinge-pose { display:grid; gap:calc(var(--font-size-base) * .7); }
+    #bluepower-hinge-pose .bp-range { display:grid; gap:calc(var(--font-size-base) * .35); max-width:500px; }
+    #bluepower-hinge-pose .bp-label { display:flex; justify-content:space-between; gap:1em; }
+    #bluepower-hinge-pose svg { width:100%; max-width:610px; display:block; }
+    #bluepower-hinge-pose .bp-frame { stroke:var(--border); stroke-width:1.5; fill:none; }
+    #bluepower-hinge-pose .bp-reference { stroke:var(--muted-foreground); stroke-width:1; stroke-dasharray:4 4; fill:none; }
+    #bluepower-hinge-pose .bp-hive { stroke:var(--foreground); stroke-width:2; fill:var(--background); }
+    #bluepower-hinge-pose .bp-raw { color:var(--viz-series-1); }
+    #bluepower-hinge-pose .bp-corrected { color:var(--viz-series-2); }
+    #bluepower-hinge-pose .bp-key { display:inline-flex; align-items:center; gap:.4em; }
+    #bluepower-hinge-pose .bp-dot { display:inline-block; width:.65em; height:.65em; background:currentColor; border-radius:50%; }
+    #bluepower-hinge-pose .bp-corrected .bp-dot { border-radius:0; }
+    #bluepower-hinge-pose .bp-text { color:var(--foreground); }
+  </style>
+  <h2 id="bluepower-hinge-title">One robot position as the HIVE tilts</h2>
+  <div class="bp-range">
+    <label class="bp-label" for="bluepower-hive-tilt"><span>Simulated HIVE angle</span><output class="tabular-nums" data-angle>25°</output></label>
+    <input class="form-range" id="bluepower-hive-tilt" type="range" min="-35" max="35" step="1" value="25">
+  </div>
+  <svg viewBox="0 0 390 210" role="img" aria-label="Side view in X and Z. The HIVE tilts around its pivot. The raw robot point moves off the floor while the corrected point stays on the floor.">
+    <path class="bp-frame" d="M12 148H378 M116 148L142 36L168 148 M142 36V148" />
+    <path class="bp-reference" d="M92 36H192" />
+    <g data-hive transform="rotate(25 142 36)">
+      <path class="bp-hive" d="M93 36H191 M93 36L85 18H106L103 36Z M181 36L178 18H199L191 36Z" />
+    </g>
+    <circle cx="142" cy="36" r="4" fill="var(--foreground)" />
+    <path data-arc d="M264 148 A167 167 0 0 0 300 85" stroke="var(--muted-foreground)" stroke-width="1" stroke-dasharray="3 4" fill="none" />
+    <circle class="bp-raw" data-raw-point cx="300" cy="86" r="5.5" fill="currentColor" stroke="var(--background)" stroke-width="1.5" />
+    <rect class="bp-corrected" data-corrected-point x="259" y="143" width="10" height="10" fill="currentColor" stroke="var(--background)" stroke-width="1.5" />
+  </svg>
+  <div class="viz-row" aria-live="polite">
+    <span class="bp-key bp-raw"><span class="bp-dot" aria-hidden="true"></span><span class="bp-text" data-raw-text>Raw X 62.1 in · Z 24.4 in</span></span>
+    <span class="bp-key bp-corrected"><span class="bp-dot" aria-hidden="true"></span><span class="bp-text" data-corrected-text>Corrected X 48.0 in · Z 0.0 in</span></span>
+  </div>
+  <p class="text-small text-muted">Side view · illustrative robot position · 43.95 in pivot height from BluePower’s configuration</p>
+  <script>
+    (() => {
+      const root = document.getElementById('bluepower-hinge-pose');
+      const slider = root.querySelector('input');
+      const get = (key) => root.querySelector(`[data-${key}]`);
+      const h = 43.95;
+      const actualX = 48;
+      const pivotX = 142;
+      const pivotY = 36;
+      const floorY = 148;
+      const scale = (floorY - pivotY) / h;
+      const rad = Math.PI / 180;
+      const normalize = (angle) => ((angle + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
+      const format = (value) => (Math.abs(value) < 0.05 ? 0 : value).toFixed(1);
+
+      function render() {
+        const degrees = Number(slider.value);
+        const theta = degrees * rad;
+        const rawX = actualX * Math.cos(theta) + h * Math.sin(theta);
+        const rawZ = actualX * Math.sin(theta) + h * (1 - Math.cos(theta));
+        const b = rawZ - h;
+        const radius = Math.hypot(rawX, b);
+        const offset = Math.atan2(b, rawX);
+        const alpha = Math.asin(-h / radius);
+        const roots = [normalize(alpha - offset), normalize(Math.PI - alpha - offset)];
+        const phi = roots.filter((value) => Math.abs(value) <= 35 * rad + 1e-9)
+          .sort((first, second) => Math.abs(first) - Math.abs(second))[0];
+        const correctedX = rawX * Math.cos(phi) - b * Math.sin(phi);
+        const correctedZ = h + rawX * Math.sin(phi) + b * Math.cos(phi);
+        const displayRawX = pivotX + rawX * scale;
+        const displayRawY = floorY - rawZ * scale;
+        const displayCorrectedX = pivotX + correctedX * scale;
+        const displayCorrectedY = floorY - correctedZ * scale;
+        const displayRadius = radius * scale;
+
+        get('angle').textContent = `${degrees > 0 ? '+' : ''}${degrees}°`;
+        get('hive').setAttribute('transform', `rotate(${degrees} ${pivotX} ${pivotY})`);
+        get('arc').setAttribute('d', `M${displayCorrectedX} ${displayCorrectedY} A${displayRadius} ${displayRadius} 0 0 ${degrees < 0 ? 1 : 0} ${displayRawX} ${displayRawY}`);
+        get('raw-point').setAttribute('cx', displayRawX);
+        get('raw-point').setAttribute('cy', displayRawY);
+        get('corrected-point').setAttribute('x', displayCorrectedX - 5);
+        get('corrected-point').setAttribute('y', displayCorrectedY - 5);
+        get('raw-text').textContent = `Raw X ${format(rawX)} in · Z ${format(rawZ)} in`;
+        get('corrected-text').textContent = `Corrected X ${format(correctedX)} in · Z ${format(correctedZ)} in`;
+      }
+
+      function restore(state) {
+        const angle = state?.modelContent?.hiveAngleDegrees;
+        if (Number.isFinite(angle) && Math.abs(angle) <= 35) slider.value = angle;
+        render();
+      }
+      slider.addEventListener('input', render);
+      slider.addEventListener('change', () => {
+        window.openai?.setWidgetState?.({ modelContent: { hiveAngleDegrees: Number(slider.value) }, privateContent: null })?.catch(() => {});
+      });
+      window.addEventListener('openai:set_globals', (event) => restore(event.detail.globals.widgetState));
+      restore(window.openai?.widgetState);
+    })();
+  </script>
+</section>

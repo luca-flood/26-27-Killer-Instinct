@@ -7,6 +7,7 @@ import java.util.Set;
 
 import org.firstinspires.ftc.teamcode.Mechanism.Blocker;
 import org.firstinspires.ftc.teamcode.Mechanism.Flower;
+import org.firstinspires.ftc.teamcode.Mechanism.Limelight;
 import org.firstinspires.ftc.teamcode.Mechanism.MecanumDrive;
 import org.firstinspires.ftc.teamcode.Mechanism.Shooter;
 import org.firstinspires.ftc.teamcode.Mechanism.intakeSubsystem;
@@ -25,6 +26,7 @@ public class KillerInstinctRobot implements NextRobot {
     public final intakeSubsystem intake;
     public final Blocker blocker = new Blocker();
     public final Flower flower = new Flower();
+    public final Limelight limelight = new Limelight();
     public final MecanumDrive drivetrain;
 
     private final Set<Mechanism> mechanisms;
@@ -37,7 +39,7 @@ public class KillerInstinctRobot implements NextRobot {
         shooter = new Shooter();
         intake = new intakeSubsystem();
         mechanisms = Collections.unmodifiableSet(
-                new HashSet<Mechanism>(Arrays.asList(shooter, intake, blocker, flower, drivetrain)));
+                new HashSet<Mechanism>(Arrays.asList(shooter, intake, blocker, flower, drivetrain, limelight)));
     }
 
     @Override
